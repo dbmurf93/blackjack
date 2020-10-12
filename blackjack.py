@@ -113,13 +113,17 @@ class Hand(Card):
         res = []
         for card in self.cards:
             res.append(card.get_name())    
-        return res
+        return res + f'    total_value = {self.value}'
 
     def __str__(self):
-        res = ', '.join(self.cards.copy())
+        res = []
+        for card in self.cards:
+            res.append(repr(card))
+        res = ', '.join(res)
+
         if self.value <= 21:
-            return res + f'val = {self.value}'
-        else: return res + 'val = BUST'
+            return res 
+        else: return res + '   BUST'
 
     def __repr__(self):
         res = []
@@ -335,25 +339,24 @@ def play_blackjack(players_list):
         i+=1
     
     #player turn
-    for key in table
+    for key in table.keys():
+        name = key.get_name()
+        hand = table[key]
+        print (f'{name}:', hand)
+    
     pass
-    table = players_turns(table)
+
+    table = player_turn(table)
 
     #dealer turn
     table = dealers_turn(table)
 
     # if table('House').get_balance() <= 0: #if House runs out of money, users win maybe get to read a txt file backstory or something
 
-
-
-    
-
-
     ##print ("Table:", repr(table)) #debugging
 
-
     #deal cards
-    pass
+    
     #for player in players_list:
         #deal until stop or bust, with option to split if same faced card
     
