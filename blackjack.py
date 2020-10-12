@@ -42,6 +42,11 @@ class Player(object):
         self.bet = 0 #reset bet
         print('Your new balance is {self.balance}')
 
+    def keep_bet(self):
+        self.balance += self.bet
+        self.bet = 0
+        print('Your new balance is {self.balance}')
+
 
 class Card(object):
     '''
@@ -96,6 +101,7 @@ class Hand(Card):
         return self.value
    
     def show_hand_partial(self):
+        """ Returns list """
         res = []
         for card in self.cards:
             if card.visibility == 0:
@@ -104,6 +110,7 @@ class Hand(Card):
         return res
 
     def show_hand_all(self):
+        """ Returns list """
         res = []
         for card in self.cards:
             res.append(card.get_name())    
@@ -148,8 +155,8 @@ class Deck(object):
 
 def build_players_list(players_list):
     '''
-    - Takes input from users, builds ((dict or list)) with up to ## players
-    - returns list containing player objects
+    - Takes input from users, builds list with up to max # of players
+    - returns list containing all player objects
     '''
     
     # stop = False
@@ -166,8 +173,8 @@ def build_players_list(players_list):
     #                 name = str(input("Enter next player name, or enter '*' to stop adding players: "))
     #                 break
     #             except: pass
-    for name in ['Kev', 'dyl', '*'] ###prefilled
-        if name in players_list:
+    for name in ['Kev', 'dyl', '*']: ###prefilled
+        if name in players_list or name == 'TheHouse':
             print('Name already chosen.')
         elif name == '*':
             break
@@ -234,7 +241,7 @@ def take_bet(player):
     '''
     while True:
         try:
-            bet = int(input("Enter a bet, in increments of $1. Enter 0 to skip this hand.")) 
+            bet = int(input(f"{player}: Enter a bet, in increments of $1. Enter 0 to skip this hand.\n")) 
             if bet > balance: 
                 try: bet = int(input('Enter a bet you can afford...'))
                 except: pass
@@ -252,16 +259,31 @@ def take_bet(player):
     return bet
 
 
-def player_turns(table):
+def players_turns(table):
     '''
-    Takes everything on the table as dict, checks for dealer blackjack 
+    Takes everything on the table as dict, after the deal. Checks for dealer blackjack 
     Processes user input to determine end value and bets for each hand, returns updated table dict. 
     Hands with blackjack or bust should be excluded from further actions.
     '''
+    dealers_hand = table['TheHouse']
+    dealers_score = dealers_hand.get_hand_val()
+
+    if dealers_score == 21: #checks for dealer blackjack
+        for player in table: #check everyone else for blackjack
+            if player.get_name()=='TheHouse': continue
+            hand_val = table[player].get_hand_val() #no splits yet
+            if hand_val < 21:
+                player.lose_bet()
+            elif hand_val == 21:
+                player.keep_bet()
+    
     for player in table:
-        if player.get_name()=='TheHouse': 
-            if table[player].get_hand_val() == 21: break
-            continue
+        if player.get_name() == 'TheHouse': continue
+        hand = table[player]
+        hand_val = hand.get_hand_val()
+        print(f'{player.get_name()}: Your hand is {hand.show_hand_all} and the table shows as follows:')
+        for key in table:
+            print(f'{player.get_name()}:',table[key].show_hand_partial())
 
 
 
@@ -283,13 +305,12 @@ def play_blackjack(players_list):
     Starts a new game, repeats until no bets placed or 'quit' command entered
     Returns players_list when done
     '''
-    ##shuffle deck
-    deck = Deck()
-    deck = deck.new_shuffle()
-    #print(deck)
+    deck = Deck().new_shuffle()
+    print(deck)
     house = Player('TheHouse',1000)
-    table = {house:Hand(0)} #dict of players: Hands(bets)
+    table = {house:Hand(0)} #dict of player: Hand(bet) pairs, will replace Hand with list of Hands for splits, and handle errors dwnstream
     for player in players_list:
+        if player.get_name() == 'TheHouse': continue
         take_bet(player) #assures bet is within acceptable range & edits player attribute
         table.update({player:Hand(player.get_bet())}) #creates new hand with player bet
     
@@ -303,7 +324,13 @@ def play_blackjack(players_list):
         i+=1
     
     #player turn
-    player_turns(table)
+    table = players_turns(table)
+
+    #dealer turn
+    table = dealers_turn(table)
+
+    # if table('TheHouse').get_balance() <= 0: #if House runs out of money, users win maybe get to read a txt file backstory or something
+
 
 
     
@@ -341,7 +368,7 @@ if __name__ == "__main__":
 
         play_blackjack(table) #deals to players and dealer, changes player balances, repeats until no bets given
 
-        players_list = check_keep_playing(players_list, balance_snapshot) #edits&returns players list based on who wants to keep playing, any leftover money is donated back to house...naturally.
+        players_list = check_keep_playing(table, balance_snapshot) #edits&returns players list based on who wants to keep playing, any leftover money is donated back to house...naturally.
 
         if len(players_list) == 0: #exit program when empty table
             print('Bye for now!')
