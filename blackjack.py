@@ -1,3 +1,4 @@
+
 import random
 
 
@@ -9,10 +10,10 @@ class Player(object):
         self.bet = bet
 
     def __str__(self):
-        return self.name
+        return self.name+': Balance $'+ str(self.balance)
     
     def __repr__(self):
-        return (self.name, self.balance)
+        return (self.name)
 
     def __hash__(self):
         return self.name.__hash__()
@@ -43,14 +44,21 @@ class Card(object):
     Represents card object with name & suit, as strings
     value: int for calculation, tuple for Ace
     '''
-    def __init__(self, name, suit, value):
+    def __init__(self, name, suit, value, visibility=1):
         self.name = name
         self.suit = suit
         self.value = value
+        self.visibility = visibility #1 for on, 0 for off
 
     def get_value(self):
         return self.value
     
+    def set_visibility_off(self):
+        self.visibility = 0
+
+    def set_visibility_on(self):
+        self.visibility = 1
+
     def __str__(self):
         return self.name + ' of ' + self.suit #ex: Ace of Spades, King of Hearts
         
@@ -63,6 +71,23 @@ class Card(object):
     def __hash__(self):
         return self.repr.__hash__()
    
+class Hand(Card):
+        ''' 
+        Represents a list of cards, with a bet value, and an int value for calcs. 
+        Uses str method to control what user sees.
+        '''
+    def __init__(self, bet):
+        self.cards = []
+        self.bet = bet
+    
+    def get_total_val(self):
+        for card in self.cards:
+            
+        
+
+
+
+
 
 class Deck(object):
     '''
@@ -96,7 +121,10 @@ class Deck(object):
             res.append(repr(card)+', \n')
         return res
 
-        
+  
+#################
+#################        
+
 
 def build_players_list(): #currently pre-filled in
     '''
@@ -117,41 +145,6 @@ def build_players_list(): #currently pre-filled in
         print(f'Hello and welcome {name}, your starting balance is $50.')
         
     return players_list
-
-
-def play_blackjack(players_list):
-    '''
-    Starts a new game, repeats until no bets placed or 'quit' command entered
-    Returns players_list when done
-    '''
-    #shuffle deck
-    deck = Deck()
-    deck = deck.new_shuffle()
-    house = Player('TheHouse',1000)
-    table = [house] #list of who's getting cards
-    for player in players_list:
-        table.append(player.get_name())
-    print ("Table:", table)
-
-    #deal cards
-    pass
-    #for player in players_list:
-        #deal until stop or bust, with option to split if same faced card
-    
-    
-    """ while True:
-                try:
-                    bet = int(input("Enter an integer bet...")) 
-                    while bet > balance: 
-                        try: bet = int(input('Enter a bet you can afford...your poor family...get help man you have a problem.'))
-                        except: pass
-                    break
-                except: pass #keeps looping while incorrect input type
-
-            player.make_bet(bet) #saves bet and moves on to next player"""
-
-
-
 
 
 def check_keep_playing(players_list, player_balances):
@@ -186,7 +179,6 @@ def check_keep_playing(players_list, player_balances):
                 print('Sorry to see you go, thanks for playing!')
             else: 
                 print(f'Sorry to see you go thanks for the ${balance}!')
-
             players_list.remove(player)
             #continues to next player
 
@@ -196,6 +188,52 @@ def check_keep_playing(players_list, player_balances):
     return players_list
 
 
+def play_blackjack(players_list):
+    '''
+    Starts a new game, repeats until no bets placed or 'quit' command entered
+    Returns players_list when done
+    '''
+    #shuffle deck
+    deck = Deck()
+    deck = deck.new_shuffle()
+    print(deck)
+    house = Player('TheHouse',1000)
+    table = {house:[]} #dict of who's getting cards, players as keys with names as the hash
+    for player in players_list:
+        table.append(player)
+    
+    i=0 #start of deal phase
+    while i<2:
+        for player in table.keys():
+            if i == 1: #2nd card
+                deck[0].set_visibility_off()
+            table[player].append(deck.pop(0)) #deal top card one at a time each player gets 2
+        i+=1
+    
+
+
+    ##print ("Table:", repr(table)) #debugging
+
+
+    #deal cards
+    pass
+    #for player in players_list:
+        #deal until stop or bust, with option to split if same faced card
+    
+    
+    """ while True:
+                try:
+                    bet = int(input("Enter an integer bet...")) 
+                    while bet > balance: 
+                        try: bet = int(input('Enter a bet you can afford...your poor family...get help man you have a problem.'))
+                        except: pass
+                    break
+                except: pass #keeps looping while incorrect input type
+
+            player.make_bet(bet) #saves bet and moves on to next player"""
+
+
+
 #################
 #################
 
@@ -203,7 +241,6 @@ def check_keep_playing(players_list, player_balances):
 if __name__ == "__main__":
     keep_playing = True
     players_list = build_players_list()
-    house_acct = 1000000 #if you win a million bucks in this game you should win something
     
     while keep_playing == True: #Keeps playing until bets stop
         balance_snapshot = {} 
@@ -217,9 +254,10 @@ if __name__ == "__main__":
 
         if len(players_list) == 0: #exit program when empty table
             print('Bye for now!')
-            keep_playing == False
+            keep_playing = False
         else: 
             playing = []
             for x in players_list: playing.append(str(x))
-            print(f'Starting new game with {playing[:-1]} and {playing[-1:]}')
+            if len(playing) > 1: print(f'Starting new game with {playing[:-1]} and {playing[-1:]}')
+            else: print(f'Starting new game with {playing}.')
             
