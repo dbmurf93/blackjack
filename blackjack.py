@@ -1,6 +1,6 @@
 
 class Player(object):
-    '''  Represents a player with a name, balance, and bet'''
+    '''  Represents a player with a name, balance, and current bet'''
     def __init__(self, name, balance = 50, bet = 0):
         self.name = str(name)
         self.balance = balance
@@ -12,6 +12,9 @@ class Player(object):
     def __repr__(self):
         res = self.name + ':' + str(self.balance)
         return res
+
+    def __hash__(self):
+        return self.name.__hash__()
 
     def get_name(self): 
         return self.name
@@ -33,23 +36,69 @@ class Player(object):
         self.bet = 0 #reset bet
         print('Your new balance is {self.balance}')
 
+
 class Card(object):
-    def __init__(self, face, value):
         """ 
-        Creates card object with 
-        face: (tuple containing 'suit' and 'name' strings)
-        value: int for calculation
+        Represents card object with name & suit, as strings
+        value: int for calculation, tuple for Ace
         """
-        self.face = face
+    def __init__(self, name, suit, value):
+        self.name = name
+        self.suit = suit
         self.value = value
 
     def get_value(self):
         return self.value
     
     def __str__(self):
-        res = self.face(1) + of self.face(0)
-        return res
+        return self.name + ' of ' + self.suit #ex: Ace of Spades, King of Hearts
+        
+    def __repr__(self):
+        if self.name == '10':
+            return (self.name + self.suit[0]) 
+        else: 
+            return (self.name[0] + self.suit[0]) #ex: AS, KH
+
+    def __hash__(self):
+        return self.repr.__hash__()
    
+   
+class Deck(object):
+    '''
+    Represents 
+    1) reference list of card objects, 
+    2) list to be shuffled and drawn from, 
+    3) self-contained discard pile list.
+    '''
+    def __init__(self):
+        self.ref_deck = []
+
+        card_names = ['Ace','1','2','3','4','5','6','7','8','9','10','Jack','Queen','King']
+        card_vals = [(1,10),1,2,3,4,5,6,7,8,9,10,10,10,10]
+
+        suits = ['Hearts','Diamonds','Clubs','Spades']
+        for suit in suits:
+            for i in range len(card_names):
+                self.ref_deck.append(Card(card_names[i], suit, card_vals[i])) 
+        
+        self.deck = self.ref_deck.copy()
+                
+    def new_shuffle(self): ##still debating if this is the best way to do this...##
+        '''returns shuffled list of all Card objects '''
+        random.shuffle(self.deck)
+        print("Deck has been shuffled.")
+        return self.deck
+  
+    def __str__(self): #to print the whole deck, i.e. check shuffle
+        res = []
+        for card in self.deck:
+            res.append(repr(card)+', \n')
+        return res
+
+        
+
+
+
 def build_players_list():
     '''
     - Takes input from users, builds ((dict or list)) with up to ## players
@@ -75,11 +124,7 @@ def play_blackjack(players_list):
     Returns players_list when done
     '''
     #shuffle deck
-    deck = {
-        # hearts, diamonds, spades, clubs
-        # A-10 13 cards, aces two values?
-        A,1,2,3,4,5,6,7,8,9,10,j,q,k
-    }
+    deck = Deck()
     #establish player bets (says whos playing this round)
     #deal cards
     pass
