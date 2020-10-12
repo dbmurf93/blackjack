@@ -5,7 +5,6 @@ class Player(object):
         self.name = str(name)
         self.balance = balance
         self.bet = bet
-        print('Hello and welcome {name}, your starting balance is $50.')
 
     def __str__(self):
         return self.name
@@ -33,30 +32,29 @@ class Player(object):
         self.bet = 0 #reset bet
         print('Your new balance is {self.balance}')
 
-    
-
-def build_players_list(self):
+   
+def build_players_list():
     '''
     - Takes input from users, builds ((dict or list)) with up to ## players
     - returns players_list containing player objects
     '''
     players_list = []
 
-    name = str(input("Enter player name: "))
-    players_list[0] = Player(name) #creates player object in slot
-    i=0
-    while i < 3:
+    name = str(input("Enter Player 1 name: "))
+    players_list.append(Player(name)) 
+    print(f'Hello and welcome {name}, your starting balance is $50.')
+
+    
+    while len(players_list) < 2: ##change max game size here##
         name = str(input("Enter next player name: "))
-        players_list[i] = Player(name) #creates player object in slot
-        i+=1
+        players_list.append(Player(name)) #creates player object in slot
+        print(f'Hello and welcome {name}, your starting balance is $50.')
+
         
+    return players_list
 
 
-
-
-
-
-def play_blackjack(self, players_list):
+def play_blackjack(players_list):
     '''
     Starts a new game with up to 3 players sitting across from the dealer
     Returns players_dict with updated balances
@@ -69,52 +67,48 @@ def play_blackjack(self, players_list):
         #deal until stop or bust, with option to split if same faced card
 
 
-
-def check_keep_playing(self, players_list, player_balances):
+def check_keep_playing(players_list, player_balances):
     '''
     Asks each player if they want to play again, reports their results
     returns whos playing next as new players_list
     '''
 
-    for player in players_list:
+    for player in players_list: #reports score and asks to play again, removes players not playing
         ref_balance = player_balances[player] #balance before this round started
-        balance = player.get_balance  #current balance
+        balance = player.get_balance()  #current balance
         name = player.get_name()
         win_amt = balance - ref_balance #positive int for winnings
         
         if balance > ref_balance: 
-            win_or_lose = 'Won ${win_amt} this round!'
-
+            win_or_lose = f'Won ${win_amt} this round!'
         elif balance == ref_balance: 
             win_or_lose = 'broke even.'
-
         elif balance < ref_balance: 
             loss = abs(win_amt)
-            win_or_lose = 'lost ${loss} this round...'
+            win_or_lose = f'lost ${loss} this round...'
 
-        print('{name}, You {win_or_lose}')
+        print(f'{name}, You {win_or_lose}')
         ans = input('Play again? (y/n)').lower().strip()
         
         if ans == 'y' or ans == 'yes': 
             bet = int(input("Enter bet...")) #saves bet and moves on to next player
+            while bet > balance: 
+                try: bet = int(input('Enter a bet you can afford...your poor family...get help man you have a problem.'))
             player.make_bet(bet)
             continue #next player
-
         elif ans == 'n' or ans == 'no': #if not playing again, $$ donated back to house
-            player_balance = player.get_player_balance()
-            if player_balance == 0:
+            if balance == 0:
                 print('Sorry to see you go, thanks for playing!')
             else: 
-                print('Sorry to see you go thanks for the ${player_balance}!')
-            
+                print(f'Sorry to see you go thanks for the ${balance}!')
+
             players_list.remove(player)
             continue
 
-        else: print("I'll just pretend I understood that, you will play again") ##ADD FUNCTION HERE## if need better input control
+        else: print("I'll just pretend I understood that, you will play again") ##ADD FUNCTION HERE## if need better input control, same for name choosing.
 
+    ##could add option here to add new players if list isn't at capacity.##
     return players_list
-
-
 
 
 
@@ -123,9 +117,9 @@ def check_keep_playing(self, players_list, player_balances):
 if __name__ == "__main__":
     keep_playing = True
     players_list = build_players_list()
+    house_acct = 1000000 #if you win a million bucks in this game you should win something
     
     while keep_playing == True: #Keeps playing until bets stop
-    
         player_balances = {} #captures dict snapshot before playing
         for player in players_list:
             balance = player.get_balance()
@@ -133,11 +127,11 @@ if __name__ == "__main__":
 
         play_blackjack(players_list) #deals to players and dealer, changes player balances, repeats until no bets given
 
-        players_list = check_keep_playing(players_list, player_balances) #edits&returns players list based on who wants to play again, any leftover money is donated back to house naturally...
+        players_list = check_keep_playing(players_list, player_balances) #edits&returns players list based on who wants to play again, any leftover money is donated back to house...naturally.
 
         if len(players_list) == 0: #exit program when empty table
             print('Bye for now!')
             keep_playing == False
         else: 
-            print('Starting new game with {players_list}'
-            continue
+            print('Starting new game with {players_list}')
+            
