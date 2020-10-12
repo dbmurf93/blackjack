@@ -71,22 +71,37 @@ class Card(object):
     def __hash__(self):
         return self.repr.__hash__()
    
+
 class Hand(Card):
         ''' 
-        Represents a list of cards, with a bet value, and an int value for calcs. 
+        Represents a list of cards, with a bet value, and an total int value for calcs. 
         Uses str method to control what user sees.
         '''
     def __init__(self, bet):
         self.cards = []
         self.bet = bet
+        self.value = 0
     
-    def get_total_val(self):
+    def get_hand_val(self):
+        val = 0
         for card in self.cards:
-            
-        
+            val += card.get_value()
+        self.value = val
+        return val
+   
+    def show_hand_partial(self):
+        res = []
+        for card in self.cards:
+            if card.visibility == 0:
+                res.append('[]')
+            else: res.append(card.get_name())
+        return res
 
-
-
+    def show_hand_all(self):
+        res = []
+        for card in self.cards:
+            res.append(card.get_name())    
+        return res
 
 
 class Deck(object):
@@ -126,13 +141,11 @@ class Deck(object):
 #################        
 
 
-def build_players_list(): #currently pre-filled in
+def build_players_list(players_list): #currently pre-filled in
     '''
     - Takes input from users, builds ((dict or list)) with up to ## players
     - returns players_list containing player objects
     '''
-    players_list = []
-
     #name = str(input("Enter Player 1 name: "))
     name = 'DylanM'
     players_list.append(Player(name)) 
@@ -171,6 +184,7 @@ def check_keep_playing(players_list, player_balances):
         ans = input('Play again? (y/n)').lower().strip()
         
         if ans == 'y' or ans == 'yes': 
+             ####TAKE BET???
             print(f'{name}, your starting balance will be ${player.get_balance()}.')
             #continues to next player
 
@@ -184,8 +198,25 @@ def check_keep_playing(players_list, player_balances):
 
         else: print("I'll just pretend I understood that, you will play again") ##ADD FUNCTION HERE## for better input control, same for name choosing.
     
-    ##could add option here to add new players if list isn't at capacity.##
+    if len(players_list) < 2:
+
     return players_list
+
+
+def take_bet(self, player):
+     while True:
+        try: bet = int(input("Enter a bet, in increments of $1...")) 
+            if bet > balance: 
+                try: bet = int(input('Enter a bet you can afford...your poor family...get help man you have a problem.'))
+                except: pass
+            elif bet <= 0: print('Ha Ha. Very Funny.')
+            else: break #balance is int within the acceptable range
+
+        except(TypeError):
+            print(f"Must be a whole number, and less than or equal to your balance of {player.get_balance()}")
+            pass #keeps looping while incorrect input type
+
+    player.make_bet(bet) #saves bet (pulls from player bal)
 
 
 def play_blackjack(players_list):
@@ -193,16 +224,17 @@ def play_blackjack(players_list):
     Starts a new game, repeats until no bets placed or 'quit' command entered
     Returns players_list when done
     '''
-    #shuffle deck
+    ##shuffle deck
     deck = Deck()
     deck = deck.new_shuffle()
     print(deck)
     house = Player('TheHouse',1000)
-    table = {house:[]} #dict of who's getting cards, players as keys with names as the hash
+    table = {house:Hand(0)} #dict of who's getting cards, players as keys with names as the hash
     for player in players_list:
-        table.append(player)
+        table[player].update(Hand(player.bet))
     
-    i=0 #start of deal phase
+    ##start of deal phase
+    i=0 
     while i<2:
         for player in table.keys():
             if i == 1: #2nd card
@@ -221,16 +253,7 @@ def play_blackjack(players_list):
         #deal until stop or bust, with option to split if same faced card
     
     
-    """ while True:
-                try:
-                    bet = int(input("Enter an integer bet...")) 
-                    while bet > balance: 
-                        try: bet = int(input('Enter a bet you can afford...your poor family...get help man you have a problem.'))
-                        except: pass
-                    break
-                except: pass #keeps looping while incorrect input type
-
-            player.make_bet(bet) #saves bet and moves on to next player"""
+   
 
 
 
@@ -240,15 +263,17 @@ def play_blackjack(players_list):
 
 if __name__ == "__main__":
     keep_playing = True
-    players_list = build_players_list()
-    
+    empty_list = []
+    players_list = build_players_list(empty_list)
+    table = players_list + Player('TheHouse',1000) #to include dealer 
+
     while keep_playing == True: #Keeps playing until bets stop
         balance_snapshot = {} 
         for player in players_list: #captures dict snapshot before playing
             balance = player.get_balance()
             balance_snapshot.update({player:balance})
 
-        play_blackjack(players_list) #deals to players and dealer, changes player balances, repeats until no bets given
+        play_blackjack(table) #deals to players and dealer, changes player balances, repeats until no bets given
 
         players_list = check_keep_playing(players_list, balance_snapshot) #edits&returns players list based on who wants to play again, any leftover money is donated back to house...naturally.
 
