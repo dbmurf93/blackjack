@@ -1,3 +1,5 @@
+import random
+
 
 class Player(object):
     '''  Represents a player with a name, balance, and current bet'''
@@ -10,8 +12,7 @@ class Player(object):
         return self.name
     
     def __repr__(self):
-        res = self.name + ':' + str(self.balance)
-        return res
+        return (self.name, self.balance)
 
     def __hash__(self):
         return self.name.__hash__()
@@ -38,10 +39,10 @@ class Player(object):
 
 
 class Card(object):
-        """ 
-        Represents card object with name & suit, as strings
-        value: int for calculation, tuple for Ace
-        """
+    '''
+    Represents card object with name & suit, as strings
+    value: int for calculation, tuple for Ace
+    '''
     def __init__(self, name, suit, value):
         self.name = name
         self.suit = suit
@@ -62,7 +63,7 @@ class Card(object):
     def __hash__(self):
         return self.repr.__hash__()
    
-   
+
 class Deck(object):
     '''
     Represents 
@@ -78,7 +79,7 @@ class Deck(object):
 
         suits = ['Hearts','Diamonds','Clubs','Spades']
         for suit in suits:
-            for i in range len(card_names):
+            for i in range(len(card_names)):
                 self.ref_deck.append(Card(card_names[i], suit, card_vals[i])) 
         
         self.deck = self.ref_deck.copy()
@@ -97,21 +98,21 @@ class Deck(object):
 
         
 
-
-
-def build_players_list():
+def build_players_list(): #currently pre-filled in
     '''
     - Takes input from users, builds ((dict or list)) with up to ## players
     - returns players_list containing player objects
     '''
     players_list = []
 
-    name = str(input("Enter Player 1 name: "))
+    #name = str(input("Enter Player 1 name: "))
+    name = 'DylanM'
     players_list.append(Player(name)) 
     print(f'Hello and welcome {name}, your starting balance is $50.')
 
     while len(players_list) < 2: ##change max game size here##
-        name = str(input("Enter next player name: "))
+        #name = str(input("Enter next player name: "))
+        name = 'KevMcSnatch'
         players_list.append(Player(name)) #creates player object in slot
         print(f'Hello and welcome {name}, your starting balance is $50.')
         
@@ -125,7 +126,13 @@ def play_blackjack(players_list):
     '''
     #shuffle deck
     deck = Deck()
-    #establish player bets (says whos playing this round)
+    deck = deck.new_shuffle()
+    house = Player('TheHouse',1000)
+    table = [house] #list of who's getting cards
+    for player in players_list:
+        table.append(player.get_name())
+    print ("Table:", table)
+
     #deal cards
     pass
     #for player in players_list:
@@ -213,6 +220,6 @@ if __name__ == "__main__":
             keep_playing == False
         else: 
             playing = []
-            lambda x: str(x) for x in players_list
-            print(f'Starting new game with {players_list}')
+            for x in players_list: playing.append(str(x))
+            print(f'Starting new game with {playing[:-1]} and {playing[-1:]}')
             
