@@ -14,10 +14,10 @@ class Player(object):
         return self.name+': Balance $'+ str(self.balance)
     
     def __repr__(self):
-        return (self.name)
+        return self.name
 
     def __hash__(self):
-        return self.name.__hash__()
+        return hash(self.name)
 
     def get_name(self): 
         return self.name
@@ -77,9 +77,6 @@ class Card(object):
         else: 
             return (self.name[0] + self.suit[0]) #ex: AS, KH
 
-    def __hash__(self):
-        return self.repr.__hash__()
-   
 
 class Hand(Card):
     ''' 
@@ -96,6 +93,8 @@ class Hand(Card):
         ''' Adds Card obj to list and recalculates hand val '''
         self.cards.append(card)
         self.value += card.get_value()
+        # if self.value > 21:
+        #     self.value = None
 
     def get_hand_val(self):
         return self.value
@@ -114,6 +113,19 @@ class Hand(Card):
         res = []
         for card in self.cards:
             res.append(card.get_name())    
+        return res
+
+    def __str__(self):
+        res = ', '.join(self.cards.copy())
+        if self.value <= 21:
+            return res + f'val = {self.value}'
+        else: return res + 'val = BUST'
+
+    def __repr__(self):
+        res = []
+        for card in self.cards:
+            res.append(repr(card))
+        ','.join(res)
         return res
 
 
@@ -174,7 +186,7 @@ def build_players_list(players_list):
     #                 break
     #             except: pass
     for name in ['Kev', 'dyl', '*']: ###prefilled
-        if name in players_list or name == 'TheHouse':
+        if name in players_list or name == 'House':
             print('Name already chosen.')
         elif name == '*':
             break
@@ -250,7 +262,7 @@ def take_bet(player):
                 print('Ha Ha. Very Funny.')
             else: break #balance is int within the acceptable range
 
-        except(TypeError):
+        except:
             print(f"Must be a whole number that is less than or equal to your balance, ${player.get_balance()}")
             pass #keeps looping while incorrect input type
 
@@ -259,30 +271,30 @@ def take_bet(player):
     return bet
 
 
-def players_turns(table):
+def player_turn(table): 
     '''
     Takes everything on the table as dict, after the deal. Checks for dealer blackjack 
     Processes user input to determine end value and bets for each hand, returns updated table dict. 
     Hands with blackjack or bust should be excluded from further actions.
     '''
-    dealers_hand = table['TheHouse']
+    dealers_hand = table['House']
     dealers_score = dealers_hand.get_hand_val()
 
     if dealers_score == 21: #checks for dealer blackjack
         for player in table: #check everyone else for blackjack
-            if player.get_name()=='TheHouse': continue
+            if player.get_name()=='House': continue
             hand_val = table[player].get_hand_val() #no splits yet
             if hand_val < 21:
                 player.lose_bet()
             elif hand_val == 21:
                 player.keep_bet()
     
-    for player in table:
-        if player.get_name() == 'TheHouse': continue
+    for player in table.keys():
+        if player.get_name() == 'House': continue
         hand = table[player]
         hand_val = hand.get_hand_val()
         print(f'{player.get_name()}: Your hand is {hand.show_hand_all} and the table shows as follows:')
-        for key in table:
+        for key in table.keys():
             print(f'{player.get_name()}:',table[key].show_hand_partial())
 
 
@@ -295,7 +307,7 @@ def dealers_turn(table):
 
 def score_table(table):
     '''
-    compares cards from 'TheHouse' as ref. updates player bets based on win or loss.
+    compares cards from 'House' as ref. updates player bets based on win or loss.
     '''
 
 
@@ -307,10 +319,9 @@ def play_blackjack(players_list):
     '''
     deck = Deck().new_shuffle()
     print(deck)
-    house = Player('TheHouse',1000)
-    table = {house:Hand(0)} #dict of player: Hand(bet) pairs, will replace Hand with list of Hands for splits, and handle errors dwnstream
+    table = {Player('House',1000):Hand(0)} #dict of player: Hand(bet) pairs, will replace Hand with list of Hands for splits, and handle errors dwnstream
     for player in players_list:
-        if player.get_name() == 'TheHouse': continue
+        if player.get_name() == 'House': continue
         take_bet(player) #assures bet is within acceptable range & edits player attribute
         table.update({player:Hand(player.get_bet())}) #creates new hand with player bet
     
@@ -324,12 +335,14 @@ def play_blackjack(players_list):
         i+=1
     
     #player turn
+    for key in table
+    pass
     table = players_turns(table)
 
     #dealer turn
     table = dealers_turn(table)
 
-    # if table('TheHouse').get_balance() <= 0: #if House runs out of money, users win maybe get to read a txt file backstory or something
+    # if table('House').get_balance() <= 0: #if House runs out of money, users win maybe get to read a txt file backstory or something
 
 
 
@@ -358,7 +371,7 @@ if __name__ == "__main__":
     print("WELCOME TO BLACKJACK")
     players_list = build_players_list([]) #passes in empty list to start game
     table = players_list.copy()
-    table.append(Player('TheHouse',1000)) #to include dealer 
+    table.append(Player('House',1000)) #to include dealer 
 
     while keep_playing == True: #Keeps playing until bets stop
         balance_snapshot = {} 
