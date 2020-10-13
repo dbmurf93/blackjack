@@ -1,3 +1,6 @@
+### Welcome to blackjack, 
+### facilities are under construction, 
+###avoid bringing loved ones onto premises
 
 import random
 
@@ -38,7 +41,9 @@ class Player(object):
     def lose_bet(self):
         loss = self.bet
         self.bet = 0
-        print(f'{self.name} you lost {loss}....Your new balance is {self.balance}')
+        if self.balance != 0:
+            print(f'{self.name} you lost {loss}....Your new balance is ${self.balance}')
+        else print ('You lost everything....')
 
     def win_bet(self, multiplier=1):
         winnings = self.bet*(1 + multiplier) #original bet plus winnings 
@@ -63,6 +68,15 @@ class Card(object):
         self.value = value
         self.visibility = visibility #default 1 for on, 0 for off
 
+    def __str__(self):
+        return self.name + ' of ' + self.suit #ex: Ace of Spades, King of Hearts
+        
+    def __repr__(self):
+        if self.name == '10':
+            return (self.name + self.suit[0]) 
+        else: 
+            return (self.name[0] + self.suit[0]) #ex: AS, KH
+
     def get_value(self):
         return self.value
     
@@ -74,15 +88,6 @@ class Card(object):
 
     def set_visibility_on(self):
         self.visibility = 1
-
-    def __str__(self):
-        return self.name + ' of ' + self.suit #ex: Ace of Spades, King of Hearts
-        
-    def __repr__(self):
-        if self.name == '10':
-            return (self.name + self.suit[0]) 
-        else: 
-            return (self.name[0] + self.suit[0]) #ex: AS, KH
 
 
 class Hand(Card):
@@ -220,7 +225,7 @@ def check_keep_playing(players_list, balance_snapshot):
         balance = player.get_balance()  #current balance
         name = player.get_name()
         win_amt = balance - ref_balance #positive int for winnings
-        
+    
         if balance > ref_balance: 
             win_or_lose = f'Won ${win_amt} this round!'
         elif balance == ref_balance: 
@@ -251,7 +256,7 @@ def check_keep_playing(players_list, balance_snapshot):
         except: print("I'll just pretend I understood that, you will play again") 
     
     if len(players_list) < 2:
-        build_players_list(players_list)
+        build_players_list(players_list)  ##loops endlessly until 
 
     return players_list
 
@@ -326,6 +331,8 @@ def deal_cards(table):
 def adjust_for_ace(): ##TODO
     pass
 
+
+#####SHOULD I MAKE THESE FUNCTIONS PART OF THE TABLE CLASS??####
 def split_hand(player, bet, hand, table):
     ''' splits hand, updates player balance for new bet, returns updated table '''
     hand1 = Hand(bet, hand.cards[0]) #breaks out indiv. cards
