@@ -36,19 +36,20 @@ class Player(object):
         self.balance -= self.bet #takes it out of player account once bet is in
     
     def lose_bet(self):
+        loss = self.bet
         self.bet = 0
-        print('Your new balance is {self.balance}')
+        print(f'{self.name} you lost {loss}....Your new balance is {self.balance}')
 
     def win_bet(self, multiplier=1):
         winnings = self.bet*(1 + multiplier) #original bet plus winnings 
         self.balance += winnings
         self.bet = 0 #reset bet
-        print('Your new balance is {self.balance}')
+        print(f'{self.name} you won {winnings}! Your new balance is {self.balance}')
 
     def keep_bet(self):
         self.balance += self.bet
         self.bet = 0
-        print('Your new balance is {self.balance}')
+        print(f'{self.name} you broke even. Your new balance is {self.balance}')
 
 
 class Card(object):
@@ -416,19 +417,40 @@ def all_player_turns(table):
 
 def dealers_turn(table):
     '''
-    Takes dict input for whole table, hit as necessary, return updated table
+    Takes dict input for whole table, hit as necessary, return updated table for scoring
     '''
-    pass 
-    # while True:
-      
+    table_dict = table.table_dict
+    
+    while True:
+        dealers_hand = table_dict['House']
+        dealers_score = dealers_hand.get_hand_val()
 
-    # return table
+        if 17 < dealers_score <= 21:
+            print ('Dealer scores:', dealers_score)
+            break #continue to scoring
+        elif dealers_score <= 17:
+            table.table_dict['House'].add_card(table.deck.draw_card())
+        elif dealers_score > 21:
+            print ("Dealer busts!")
+            break
+
+    return table
 
 def score_table(table):
     '''
     compares cards from 'House' as ref. updates player bets based on win or loss.
     '''
-    pass
+    dealers_hand = table.table_dict['House']
+    dealers_score = dealers_hand.get_hand_val()
+    table_dict = table.table_dict
+    for player in table_dict.keys():
+        score = table_dict[player].get_hand_val()
+        if 21 >= score > dealers_score:
+            player.win_bet()
+        if score < dealers_score:
+
+        if score = dealers_score:
+
 
 
 
