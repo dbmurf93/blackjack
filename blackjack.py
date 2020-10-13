@@ -19,6 +19,9 @@ class Player(object):
     def __hash__(self):
         return hash(self.name)
 
+    def __eq__(self, other):
+        return self.name == other
+
     def get_name(self): 
         return self.name
     
@@ -381,9 +384,6 @@ def play_hand(player, hand, table):
     
     return table
 
-
-
-
 def all_player_turns(table): 
     '''
     Takes in Table obj. Checks for dealer blackjack 
@@ -391,16 +391,14 @@ def all_player_turns(table):
     **Hands with 21+ should be excluded from further actions.
     '''
     table_dict = table.table_dict
-    for key in table_dict.keys():
-        if key.get_name() == 'House':
-            housekey = key  #cleaner way to get this key???
-    dealers_hand = table_dict[housekey]
+    
+    dealers_hand = table_dict['House']
     dealers_score = dealers_hand.get_hand_val()
     
     ##checking for dealer blackjack 1st
     if dealers_score == 21: 
         for player in table_dict: #check everyone else for blackjack
-            if player.get_name()=='House': continue
+            if player =='House': continue
             hand_val = table[player].get_hand_val() #no splits yet
             if hand_val < 21:
                 player.lose_bet()
@@ -409,17 +407,22 @@ def all_player_turns(table):
    
     ##player turn start
     for player in table_dict.keys():
-        if player.get_name() == 'House': continue #skips 
+        if player == 'House': continue #skips 
         hand = table_dict[player]
         table = play_hand(player, hand, table) #player chooses to add cards, split, and when to stop if no bust
 
     return table
 
+
 def dealers_turn(table):
     '''
-    Takes dict input for whole table, hit as necessary, and returns updated table dict & deck
+    Takes dict input for whole table, hit as necessary, return updated table
     '''
-    return table
+    pass 
+    # while True:
+      
+
+    # return table
 
 def score_table(table):
     '''
@@ -445,6 +448,7 @@ def setup_table(players_list):
     table = Table(table_dict, Deck())
     return table
 
+
 def play_blackjack(players_list):
     '''
     Plays multiple hands, Changes player balances accordingly, repeats until no bets or stop command given
@@ -458,9 +462,6 @@ def play_blackjack(players_list):
         ##dealing 2 cards to all seats
         table = deal_cards(table)
 
-        # if check_dealer_blackjack(table):
-        #     break
-        
         #players' turns
         table = all_player_turns(table) #returns updated table when done
 
