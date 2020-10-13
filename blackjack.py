@@ -57,7 +57,7 @@ class Card(object):
         self.name = name
         self.suit = suit
         self.value = value
-        self.visibility = visibility #1 for on, 0 for off
+        self.visibility = visibility #default 1 for on, 0 for off
 
     def get_value(self):
         return self.value
@@ -115,10 +115,11 @@ class Hand(Card):
         return res
 
     def show_hand_all(self):
-        """ Returns list """
+        """ Makes all cards visible, Returns formatted list """
         res = []
         for card in self.cards:
-            res.append(str(card))    
+            res.append(str(card)) 
+            card.set_visibility_on() #flips over card once viewed   
         res = ','.join(res)
         return res + f'    total_value = {self.get_hand_val()}'
 
@@ -250,6 +251,14 @@ def check_keep_playing(players_list, balance_snapshot):
 
     return players_list
 
+def check_funds(player, amt):
+    ''' Returns True for acceptable bets, false for negative or too high '''
+    bal = player.get_balance()
+    if 0 > bal > amt:
+        return False
+    elif 0 >= bal >= amt:
+        return True
+
 def take_bet(player):
     ''' 
     Takes in Player obj
@@ -276,17 +285,17 @@ def take_bet(player):
     print(f'${bet} from {player.get_name()}') #confirm bet
     return player
 
-def build_table_view(table):
+def table_view(player, table):
     '''
-    Represents a player looking at the rest of the table
-    Takes table dict and maps Hands to names instead of Player obj
-    Returns partial view dict with hands mapped to name strs. 
+    Represents a player looking at the rest of the table (some cards will be face down)
+    Takes table obj and maps Hands to names instead of Player obj
+    for print
     '''
     table_view = {} 
     table_dict = table.table_dict
     for key in table_dict.keys(): #looks at each player&house 
         i=0
-        try: #catches split hands
+        try: #displays split hands
             for hand in table_dict[key]: 
                 if i<1: 
                     table_view[key.get_name()] = hand.show_hand_partial() #create key/value pair
@@ -296,15 +305,9 @@ def build_table_view(table):
             hand = table_dict[key]
             table_view[key.get_name()] = hand.show_hand_partial() #create key/value pair
 
-    return table_view
-
-def check_funds(player, amt):
-    ''' Returns True for acceptable bets, false for negative or too high '''
-    bal = player.get_balance()
-    if 0 > bal > amt:
-        return False
-    elif 0 >= bal >= amt:
-        return True
+        for other_player in table_view.keys():
+            if other_player == player.get_name(): continue #skip self
+            print(f'{other_player}:',table_view[other_player])
 
 
 
@@ -320,15 +323,21 @@ def split_hand(player, bet, hand, table):
 
     return table
 
-def hitorstick(player, table):
-    print('Enter A for another card, or St to stick with your current hand')
-    ans = str(input("A / St:    ")).lower()
-    if ans ==  'a':
-        hand.add_card(table.deck.draw_card())
-    elif ans == 'st':
+def hitorstick(player, hand, table):
+    ''' prompts user until exit or bust, returns updated table (to include new cards in play)'''
+    
+    print(f'{player}: Enter "H" to hit for another card, or "*" to stick with your current hand')
+    ans = str(input("(H / *)  :   ")).lower()
+    if ans ==  'h':
+        table[player].add_card(table.deck.draw_card()) #pull card from the deck and add to player hand
+        table = hitorstick(player, table)
+
+    elif ans == '*':
+        hand = table[player]
         print(f'{player} chooses to stand at {hand.get_hand_val()}.')
         pass
 
+   
 def play_hand(player, table):
     ''' Shows players cards, partial view dict, & takes action as directed, returns updated table '''
     table_dict = table.table_dict
@@ -340,10 +349,8 @@ def play_hand(player, table):
         hand = player_cards
 
         print(f'{player.get_name()}: Your hand is {hand.show_hand_all()} and the table shows as follows:')
-        table_view = build_table_view(table) #builds str dict of what player sees 
-        for other_player in table_view.keys():
-            if other_player == player.get_name(): continue #skip self
-            print(f'{other_player}:',table_view[other_player])
+        table_view(player, table) #prints table from player POV
+        
         
         #if split is possible..
         if hand.cards[0].get_card_name() == hand.cards[1].get_card_name(): 
@@ -357,7 +364,7 @@ def play_hand(player, table):
             else: #not enough funds to split
                 pass 
 
-        hitorstick(player, table)
+        table = hitorstick(player, table)
             
 
     return table
@@ -439,11 +446,11 @@ def setup_table(players_list):
     for player in players_list: 
         if player.get_name() == 'House': continue
         player = take_bet(player) #assures bet is within acceptable range & edits player attribute
-        table_dict.update({player:Hand(player.get_bet())}) #creates new hand with player bet
+        if player.get_bet() > 0:
+            table_dict.update({player:Hand(player.get_bet())}) #creates new hand with player bet
 
          #create Table object, highest level container
-        table = Table(table_dict, Deck())
-    
+    table = Table(table_dict, Deck())
     return table
 
 def play_blackjack(players_list):
