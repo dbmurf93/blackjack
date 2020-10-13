@@ -180,6 +180,7 @@ class Deck(Card):
         self.deck[0].set_visibility_off()
         return self.deck.pop(0)
 
+
 class Table(object):
     """ 
     Represents a dict of players: hands
@@ -407,6 +408,16 @@ def score_table(table):
 
 
 
+def balance_snapshot(table):
+    ''' captures dict snapshot of players' balances for later reporting. Returns dict '''
+    balance_snapshot = {} 
+    for player in table: 
+        if player.get_name() == 'House': continue 
+        bal = player.get_balance()
+        balance_snapshot.update({player:bal}) #save point for later comparison
+    
+    return balance_snapshot
+
 def deal_cards(table):
     ''' takes Table obj, deals 1up1dwn to each seat, returns updated table. '''
     i=0 
@@ -420,15 +431,48 @@ def deal_cards(table):
         i+=1
     return table
 
-def balance_snapshot(table):
-    ''' captures dict snapshot of players' balances for later reporting. Returns dict '''
-    balance_snapshot = {} 
-    for player in table: 
+def setup_table(players_list):
+    ''' Adds players and house to seats with empty hands, adds bets to each hand, and returns table '''
+    table_dict = {Player('House',1000):Hand(0)} #dict of player: Hand(bet) pairs, planning to replace Hand with list of Hands for splits, and handle errors dwnstream
+    
+    #gather bets
+    for player in players_list: 
         if player.get_name() == 'House': continue
-        balance = player.get_balance()
-        balance_snapshot.update({player:balance})
-    return balance_snapshot
+        player = take_bet(player) #assures bet is within acceptable range & edits player attribute
+        table_dict.update({player:Hand(player.get_bet())}) #creates new hand with player bet
 
+         #create Table object, highest level container
+        table = Table(table_dict, Deck())
+    
+    return table
+
+def play_blackjack(players_list):
+    '''
+    Plays multiple hands, Changes player balances accordingly, repeats until no bets or stop command given
+    Returns updated players_list on exit
+    '''
+    stop = False
+    while stop == False:
+        ##Table setup    
+        table = setup_table(players_list)
+
+        ##dealing 2 cards to all seats
+        table = deal_cards(table)
+
+        if check_dealer_blackjack(table):
+            break
+        
+        #players' turns
+        table = all_player_turns(table) #returns updated table when done
+
+        #dealer's turn
+        table = dealers_turn(table) 
+
+        
+    #adjust player balances based on hands in comparison to dealer
+    table = score_table(table)
+        
+        
 def build_players_list(players_list):
     '''
     - Takes input from users, builds list with up to max # of players
@@ -461,51 +505,7 @@ def build_players_list(players_list):
         
     return players_list
 
-def play_blackjack(players_list):
-    '''
-    Starts a new game, repeats until no bets placed or 'quit' command entered
-    Returns players_list when done
-    '''
-    ##Table setup
-    table_dict = {Player('House',1000):Hand(0)} #dict of player: Hand(bet) pairs, planning to replace Hand with list of Hands for splits, and handle errors dwnstream
-    
-    #gather bets
-    for player in players_list: 
-        if player.get_name() == 'House': continue
-        player = take_bet(player) #assures bet is within acceptable range & edits player attribute
-        table_dict.update({player:Hand(player.get_bet())}) #creates new hand with player bet
-    
-    #create Table object, highest level container
-    table = Table(table_dict, Deck())
-
-    ##dealing 2 cards to all seats
-    table = deal_cards(table)
-    
-    #players' turns
-    table = all_player_turns(table) #returns updated table when done
-
-    #dealer's turn
-    table = dealers_turn(table) 
-
-    # #players scored against dealer
-    # for player in table.keys():
-    #     scoring(table[player]) #must be equipped to handle split hands 
    
-    # if table('House').get_balance() <= 0: #if House runs out of money, users win maybe get to read a txt file backstory or something
-
-    ##print ("Table:", repr(table)) #debugging
-
-    #deal cards
-    
-    #for player in players_list:
-        #deal until stop or bust, with option to split if same faced card
-
-   
-    
-   
-
-
-
 #################
 #################
 
@@ -521,7 +521,7 @@ if __name__ == "__main__":
         #beginning of a "round" (contains multiple hands dealt)
         balance_snapshot = balance_snapshot(table)
 
-        play_blackjack(table) #deals to players and dealer, changes player balances, repeats until no bets given
+        table = play_blackjack(table) 
 
         players_list = check_keep_playing(table, balance_snapshot) #edits&returns players list based on who wants to keep playing, any leftover money is donated back to house...naturally.
 
