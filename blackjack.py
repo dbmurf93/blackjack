@@ -249,12 +249,11 @@ def check_keep_playing(players_list, balance_snapshot):
 
     return players_list
 
-
 def take_bet(player):
     ''' 
     Takes in Player obj
     Processes user input to only allow integer bets within the acceptable range 0->Bal 
-    Edits Player.bet attribute & returns bet as int
+    Edits Player.bet attribute & returns updated player obj
     '''
     while True: #input control loop
         try:
@@ -274,8 +273,7 @@ def take_bet(player):
 
     player.make_bet(bet) #saves bet (pulls from player bal)
     print(f'${bet} from {player.get_name()}') #confirm bet
-    return bet
-
+    return player
 
 def build_table_view(table):
     '''
@@ -299,7 +297,6 @@ def build_table_view(table):
 
     return table_view
 
-
 def check_funds(player, amt):
     ''' Returns True for acceptable bets, false for negative or too high '''
     bal = player.get_balance()
@@ -307,6 +304,7 @@ def check_funds(player, amt):
         return False
     elif 0 >= bal >= amt:
         return True
+
 
 
 def split_hand(player, bet, hand, table):
@@ -321,6 +319,14 @@ def split_hand(player, bet, hand, table):
 
     return table
 
+def hitorstick(player, table):
+    print('Enter A for another card, or St to stick with your current hand')
+    ans = str(input("A / St:    ")).lower()
+    if ans ==  'a':
+        hand.add_card(table.deck.draw_card())
+    elif ans == 'st':
+        print(f'{player} chooses to stand at {hand.get_hand_val()}.')
+        pass
 
 def play_hand(player, table):
     ''' Shows players cards, partial view dict, & takes action as directed, returns updated table '''
@@ -344,21 +350,14 @@ def play_hand(player, table):
             if check_funds(player, bet): #proceeds if player has enough to split
                 print('Enter H to hit for another card, S to split your hand, or * to stick with your current hand')
                 ans = str(input("H / S / *:    ")).lower()
-
-
-                table = split_hand(player, bet, table) #updates table with new player hand-list
+                if ans == 's':
+                    table = split_hand(player, bet, hand, table) #updates table with new player hand-list
                 table = play_hand(player, table) #then play all hands recursively
             else: #not enough funds to split
                 pass 
 
-
-        else:
-            print('Enter A for another card, or St to stick with your current hand')
-            ans = str(input("A / St:    ")).lower()
-            if ans ==  'a':
-                hand.add_card(table.deck.draw_card())
-            elif ans == 'st':
-                pass
+        hitorstick(player, table)
+            
 
     return table
     
@@ -391,8 +390,6 @@ def all_player_turns(table):
     for player in table_dict.keys():
         if player.get_name() == 'House': continue #skips 
         table = play_hand(player, table) #player chooses to add cards, split, and when to stop if no bust
-        
-        
 
     return table
 
@@ -400,12 +397,13 @@ def dealers_turn(table):
     '''
     Takes dict input for whole table, hit as necessary, and returns updated table dict & deck
     '''
-    return table, deck
+    return table
 
 def score_table(table):
     '''
     compares cards from 'House' as ref. updates player bets based on win or loss.
     '''
+    pass
 
 
 
@@ -474,8 +472,8 @@ def play_blackjack(players_list):
     #gather bets
     for player in players_list: 
         if player.get_name() == 'House': continue
-        bet = take_bet(player) #assures bet is within acceptable range & edits player attribute
-        table_dict.update({player:Hand(bet)}) #creates new hand with player bet
+        player = take_bet(player) #assures bet is within acceptable range & edits player attribute
+        table_dict.update({player:Hand(player.get_bet())}) #creates new hand with player bet
     
     #create Table object, highest level container
     table = Table(table_dict, Deck())
