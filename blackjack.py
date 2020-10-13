@@ -62,6 +62,9 @@ class Card(object):
     def get_value(self):
         return self.value
     
+    def get_card_name(self):
+        return self.name
+
     def set_visibility_off(self):
         self.visibility = 0
 
@@ -84,21 +87,24 @@ class Hand(Card):
     Uses str method to control what user sees.
     '''
 
-    def __init__(self, bet):
+    def __init__(self, bet, card = None):
         self.cards = []
+        self.card.append(card)
         self.bet = bet
-        self.value = 0
     
     def add_card(self, card):
         ''' Adds Card obj to list and recalculates hand val '''
         self.cards.append(card)
-        self.value += card.get_value()
-        # if self.value > 21:
-        #     self.value = None
 
     def get_hand_val(self):
-        return self.value
-   
+        value = 0
+        for card in self.cards:
+            value += card.get_value()
+        return value
+    
+    def get_bet(self):
+        return self.bet
+    
     def show_hand_partial(self):
         """ Returns list """
         res = []
@@ -152,9 +158,10 @@ class Deck(object):
                 self.ref_deck.append(Card(card_names[i], suit, card_vals[i])) 
         
         self.deck = self.ref_deck.copy()
-                
+    
     def new_shuffle(self): ##still debating if this is the best way to do this...##
         '''returns shuffled list of all Card objects '''
+        self.deck = self.ref_deck.copy()
         random.shuffle(self.deck)
         print("Deck has been shuffled.")
         return self.deck
@@ -164,10 +171,27 @@ class Deck(object):
         for card in self.deck:
             res.append(repr(card)+', \n')
         return res
+    
+    def draw_card(self):
+        '''Returns top card from deck and removes from stack '''
+        return self.deck.pop(0)
 
 
-#################
-#################        
+class Table(object):
+    """ 
+    Represents a dict of players: hands
+    stores Deck obj
+    passed in and out of f'n args to keep current 
+    """ 
+    
+    def __init__(self, table_dict, deck):
+        self.table_dict = table_dict
+        self.deck = deck
+
+
+
+##################
+##################       
 
 
 def build_players_list(players_list):
@@ -257,7 +281,7 @@ def take_bet(player):
     Processes user input to only allow integer bets within the acceptable range 0->Bal 
     Edits Player.bet attribute & returns bet as int
     '''
-    while True:
+    while True: #input control loop
         try:
             bet = int(input(f"{player}: Enter a bet, in increments of $1. Enter 0 to skip this hand.\n")) 
             if bet > balance: 
@@ -273,7 +297,7 @@ def take_bet(player):
             pass #keeps looping while incorrect input type
 
     player.make_bet(bet) #saves bet (pulls from player bal)
-    print(f'${bet} from {player.get_name()}')
+    print(f'${bet} from {player.get_name()}') #confirm bet
     return bet
 
 
@@ -301,7 +325,46 @@ def build_partial_view(table):
     return partial_view
 
 
-def all_player_turns(table): 
+    
+def play_hand(player, hand, table):
+    ''' Shows players cards, partial view dict, & takes action as directed, returns table & deck '''
+    try:
+        for hand in hand: #catches when split hands are passed in
+            table = play_hand(player, hand, table) #plays em individually
+    except: #for single hand objs
+        if player.get_name() == 'House': continue #skips 
+        hand_val = hand.get_hand_val() 
+
+        print(f'{player.get_name()}: Your hand is {hand.show_hand_all()} and the table shows as follows:')
+        partial_view = build_partial_view(table) #builds str dict of what player sees 
+        for other_player in partial_view.keys():
+            if other_player == player.get_name(): continue #skip self
+            print(f'{other_player}:',partial_view[other_player])
+        
+        if hand[0].get_card_name() == hand[1].get_card_name(): #if split is possible..
+            print('Enter A for another card, Sp to split your hand, or St to stick with your current hand')
+            ans = str(input("A / Sp / St")).lower()
+            if ans == "sp":
+                bet = hand.get_bet()
+                hand1 = Hand(bet)
+                hand1.add_card(hand[0])
+                hand2 = Hand(bet)
+                hand2.add_card(hand[1])
+                table[player].update([hand1,hand2])
+
+        else:
+            print('Enter A for another card, or St to stick with your current hand')
+            ans = str(input("A / St")).lower()
+            if ans ==  'a':
+                hand.add_card(table.deck.draw_card())
+            elif ans == 'st':
+                continue
+
+    return table
+    
+
+    
+def all_player_turns(table, deck): 
     '''
     Takes in {players: hands}. Checks for dealer blackjack 
     Processes user input to determine end value and bets for each hand, returns updated table dict. 
@@ -325,34 +388,25 @@ def all_player_turns(table):
    
     ##player turn start
     for player in table.keys():
-        if player.get_name() == 'House': continue #skips
-        hand = table[player] #expects single obj, will have a list with more eventually
-        hand_val = hand.get_hand_val() 
+        hand = table[player]
+        table = play_hand(player, hand, table, deck) #player chooses to add cards, split, and when to stop if no bust
+        
+        
 
-        print(f'{player.get_name()}: Your hand is {hand.show_hand_all()} and the table shows as follows:')
-        partial_view = build_partial_view(table) #builds str repr of others cards
-        for other_player in partial_view.keys():
-            if other_player == player: continue
-            print(f'{player.get_name()}:',table[key].show_hand_partial())
+    return table, deck
 
 
-
-
-    return table
-
-
-
-def dealers_turn(table):
+def dealers_turn(table, deck):
     '''
-    Takes dict input for whole table, hit as necessary, and returns updated table dict
+    Takes dict input for whole table, hit as necessary, and returns updated table dict & deck
     '''
+    return table, deck
 
 
 def score_table(table):
     '''
     compares cards from 'House' as ref. updates player bets based on win or loss.
     '''
-
 
 
 def play_blackjack(players_list):
@@ -365,30 +419,26 @@ def play_blackjack(players_list):
     table = {Player('House',1000):Hand(0)} #dict of player: Hand(bet) pairs, planning to replace Hand with list of Hands for splits, and handle errors dwnstream
     for player in players_list:
         if player.get_name() == 'House': continue
-        take_bet(player) #assures bet is within acceptable range & edits player attribute
-        table.update({player:Hand(player.get_bet())}) #creates new hand with player bet
+        bet = take_bet(player) #assures bet is within acceptable range & edits player attribute
+        table.update({player:Hand(bet)}) #creates new hand with player bet
     
     ##start of deal phase
     i=0 
     while i<2:
         for player in table.keys():
-            if i == 1: #2nd card
-                deck[0].set_visibility_off()
+            if i == 1: #2nd card 
+                deck[0].set_visibility_off() #dealt face down
             table[player].add_card(deck.pop(0)) #deal top card one at a time each player gets 2
         i+=1
     
     #player turn
-    for key in table.keys():
-        name = key.get_name()
-        hand = table[key]
-        print (f'{name}:', hand)
-    
-    pass
-
-    table = all_player_turns(table)
+    table, deck = all_player_turns(table, deck) #returns updated table when done
 
     #dealer turn
-    table = dealers_turn(table)
+    table, deck = dealers_turn(table, deck) 
+
+    for player in table.keys():
+        scoring(table[player]) #must be equipped to handle split hands 
 
     # if table('House').get_balance() <= 0: #if House runs out of money, users win maybe get to read a txt file backstory or something
 
@@ -411,8 +461,9 @@ def play_blackjack(players_list):
 if __name__ == "__main__":
     keep_playing = True
     print("WELCOME TO BLACKJACK")
-    players_list = build_players_list([]) #passes in empty list to start game
-    table = players_list.copy()
+
+    table = build_players_list([]) #passes in empty list to start game
+    
     table.append(Player('House',1000)) #to include dealer 
 
     while keep_playing == True: #Keeps playing until bets stop
