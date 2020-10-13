@@ -11,7 +11,7 @@ class Player(object):
         self.bet = bet
 
     def __str__(self):
-        return self.name+': Balance $'+ str(self.balance)
+        return self.name
     
     def __repr__(self):
         return self.name
@@ -50,8 +50,8 @@ class Player(object):
 
 class Card(object):
     '''
-    Represents card object with name & suit, as strings
-    value: int for calculation, tuple for Ace
+    Represents card object with name & suit, as str
+    value: int for calculation, Aces 10 by default with alt handled in scoring function of Hand
     '''
     def __init__(self, name, suit, value, visibility=1):
         self.name = name
@@ -105,14 +105,15 @@ class Hand(Card):
         for card in self.cards:
             if card.visibility == 0:
                 res.append('[]')
-            else: res.append(card.get_name())
+            else: res.append(str(card))
         return res
 
     def show_hand_all(self):
         """ Returns list """
         res = []
         for card in self.cards:
-            res.append(card.get_name())    
+            res.append(str(card))    
+        res = ','.join(res)
         return res + f'    total_value = {self.value}'
 
     def __str__(self):
@@ -143,7 +144,7 @@ class Deck(object):
         self.ref_deck = []
 
         card_names = ['1','2','3','4','5','6','7','8','9','10','Jack','Queen','King','Ace']
-        card_vals = [1,2,3,4,5,6,7,8,9,10,10,10,10,10]
+        card_vals = [1,2,3,4,5,6,7,8,9,10,10,10,10,11]
 
         suits = ['Hearts','Diamonds','Clubs','Spades']
         for suit in suits:
@@ -164,7 +165,7 @@ class Deck(object):
             res.append(repr(card)+', \n')
         return res
 
-  
+
 #################
 #################        
 
@@ -251,7 +252,8 @@ def check_keep_playing(players_list, balance_snapshot):
 
 
 def take_bet(player):
-    ''' Takes in Player obj
+    ''' 
+    Takes in Player obj
     Processes user input to only allow integer bets within the acceptable range 0->Bal 
     Edits Player.bet attribute & returns bet as int
     '''
@@ -275,16 +277,44 @@ def take_bet(player):
     return bet
 
 
-def player_turn(table): 
+def build_partial_view(table):
     '''
-    Takes everything on the table as dict, after the deal. Checks for dealer blackjack 
+    Represents a player looking at the rest of the table
+    Takes table dict and maps Hands to names instead of Player obj
+    Returns partial view dict with hands mapped to name strs. 
+    DONT FORGET TO CHANGE VISIBILITY ONCE CARDS ARE PLAYED
+    '''
+    partial_view = {} 
+    for key in table.keys(): #looks at each player&house 
+        i=0
+        try: #catches split hands
+            for hand in table[key]: 
+                if i<1: 
+                    partial_view[key.get_name()] = hand.show_hand_partial() #create key/value
+                    i+=1
+                else: partial_view[key.get_name()].append(hand.show_hand_partial()) #add new value to key
+        except(TypeError): #for non split
+            hand = table[key]
+            partial_view[key.get_name()] = hand.show_hand_partial()
+
+
+    return partial_view
+
+
+def all_player_turns(table): 
+    '''
+    Takes in {players: hands}. Checks for dealer blackjack 
     Processes user input to determine end value and bets for each hand, returns updated table dict. 
     Hands with blackjack or bust should be excluded from further actions.
     '''
-    dealers_hand = table['House']
+    for key in table.keys():
+        if key.get_name() == 'House':
+            housekey = key  #open to feedback on a cleaner way to get this key
+    dealers_hand = table[housekey]
     dealers_score = dealers_hand.get_hand_val()
-
-    if dealers_score == 21: #checks for dealer blackjack
+    
+    ##checking for dealer blackjack 1st
+    if dealers_score == 21: 
         for player in table: #check everyone else for blackjack
             if player.get_name()=='House': continue
             hand_val = table[player].get_hand_val() #no splits yet
@@ -292,14 +322,23 @@ def player_turn(table):
                 player.lose_bet()
             elif hand_val == 21:
                 player.keep_bet()
-    
+   
+    ##player turn start
     for player in table.keys():
-        if player.get_name() == 'House': continue
-        hand = table[player]
-        hand_val = hand.get_hand_val()
-        print(f'{player.get_name()}: Your hand is {hand.show_hand_all} and the table shows as follows:')
-        for key in table.keys():
+        if player.get_name() == 'House': continue #skips
+        hand = table[player] #expects single obj, will have a list with more eventually
+        hand_val = hand.get_hand_val() 
+
+        print(f'{player.get_name()}: Your hand is {hand.show_hand_all()} and the table shows as follows:')
+        partial_view = build_partial_view(table) #builds str repr of others cards
+        for other_player in partial_view.keys():
+            if other_player == player: continue
             print(f'{player.get_name()}:',table[key].show_hand_partial())
+
+
+
+
+    return table
 
 
 
@@ -323,7 +362,7 @@ def play_blackjack(players_list):
     '''
     deck = Deck().new_shuffle()
     print(deck)
-    table = {Player('House',1000):Hand(0)} #dict of player: Hand(bet) pairs, will replace Hand with list of Hands for splits, and handle errors dwnstream
+    table = {Player('House',1000):Hand(0)} #dict of player: Hand(bet) pairs, planning to replace Hand with list of Hands for splits, and handle errors dwnstream
     for player in players_list:
         if player.get_name() == 'House': continue
         take_bet(player) #assures bet is within acceptable range & edits player attribute
@@ -346,7 +385,7 @@ def play_blackjack(players_list):
     
     pass
 
-    table = player_turn(table)
+    table = all_player_turns(table)
 
     #dealer turn
     table = dealers_turn(table)
@@ -389,9 +428,9 @@ if __name__ == "__main__":
         if len(players_list) == 0: #exit program when empty table
             print('Bye for now!')
             keep_playing = False
-        else: 
-            playing = []
-            for x in players_list: playing.append(str(x))
-            if len(playing) > 1: print(f'Starting new game with {playing[:-1]} and {playing[-1:]}')
-            else: print(f'Starting new game with {playing}.')
+
+        elif len(players_list) > 1: 
+            print(f'Starting new game with {players_list[:-1]} and {players_list[-1:]}')
+            
+        else: print(f'Starting new game with {players_list}.')
             
