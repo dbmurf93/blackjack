@@ -282,7 +282,7 @@ def take_bet(player):
             pass #keeps looping while incorrect input type
 
     player.make_bet(bet) #saves bet (pulls from player bal)
-    print(f'${bet} from {player.get_name()}') #confirm bet
+    print(f'${bet} from {player.get_name()}\n') #confirm bet
     return player
 
 def table_view(player, table):
@@ -336,20 +336,19 @@ def split_hand(player, bet, hand, table):
 def hitorstick(player, hand, table):
     ''' prompts user until exit or bust, changes player and hand, & returns updated table '''
     
-    while keep_playing: # loop operates on player and hand before adding to table 
-        print (f'{player}, Your hand is {hand.show_hand_all()}.')
+    while True: # loop operates on player and hand before adding to table 
+        print (f'Your hand is {hand.show_hand_all()}.')
         print(f'{player}: Enter "H" to hit for another card, or "*" to stick with your current hand')
         ans = str(input("(H / *)  :   ")).lower()
         if ans ==  'h':
             hand.add_card(table.deck.draw_card()) #pull card from the deck and add to player hand
 
         elif ans == '*':
-            print(f'{player} chooses to stand at {hand.get_hand_val()}.')
+            print(f'{player} chooses to stand at {hand.get_hand_val()}.\n\n')
             break
         if hand.get_hand_val() > 21:
-            print (f'{player}, Your hand is {hand.show_hand_all()}.')
-            print ('Ah shoot, bust!')
-
+            print (f'{player}, Your hand is {hand.show_hand_all()}.\nBUST!\n\n')
+            break
 
     table.table_dict.update({player:hand}) #overwrites info at slot
     return table
@@ -363,7 +362,7 @@ def play_hand(player, hand, table):
             table = play_hand(player, i, table) #plays em individually
     
     except(TypeError): #for when single hand objs passed in
-        print(f'{player.get_name()}: Your hand is {hand.show_hand_all()} and the table shows as follows:')
+        print(f'\n\n{player.get_name()}: The table shows as follows:')
         table_view(player, table) #prints table from player POV
         
         #if split is possible..
