@@ -297,7 +297,7 @@ def table_view(player, table):
     '''
     table_dict = table.table_dict
     for key in table_dict.keys(): #looks at each player&house 
-        if key.get_name() == player.get_name(): continue #skip self
+        if key == player: continue #skip self
         print(f'{key}: {table_dict[key].show_hand_partial()}')
 
 def balance_snapshot(table):
@@ -323,7 +323,8 @@ def deal_cards(table):
         i+=1
     return table
 
-
+def adjust_for_ace(): ##TODO
+    pass
 
 def split_hand(player, bet, hand, table):
     ''' splits hand, updates player balance for new bet, returns updated table '''
@@ -400,7 +401,7 @@ def all_player_turns(table):
     if dealers_score == 21: 
         for player in table_dict: #check everyone else for blackjack
             if player =='House': continue
-            hand_val = table[player].get_hand_val() #no splits yet
+            hand_val = table_dict[player].get_hand_val() #no splits yet
             if hand_val < 21:
                 player.lose_bet()
             elif hand_val == 21:
@@ -413,6 +414,7 @@ def all_player_turns(table):
         table = play_hand(player, hand, table) #player chooses to add cards, split, and when to stop if no bust
 
     return table
+
 
 
 def dealers_turn(table):
@@ -442,35 +444,43 @@ def score_table(table):
     '''
     dealers_hand = table.table_dict['House']
     dealers_score = dealers_hand.get_hand_val()
-    table_dict = table.table_dict
-    for player in table_dict.keys():
-        score = table_dict[player].get_hand_val()
-        if 21 >= score > dealers_score:
-            player.win_bet()
-        if score < dealers_score:
+    td = table.table_dict
+    for player in td:
+        if player == 'House': continue
+        score = td[player].get_hand_val()
+        if score <= 21:
+            if score > dealers_score:
+                player.win_bet()
+            elif score == dealers_score:
+                player.keep_bet()
 
-        if score = dealers_score:
-
-
+            elif score < dealers_score and dealers_score <= 21:
+                player.lose_bet()
+        else: 
+            print (f'{player} Busted.')
+            player.lose_bet()
+    
+    return table
 
 
 
 def setup_table(players_list):
     ''' Adds players and house to seats with empty hands, adds bets to each hand, and returns table '''
-    table_dict = {Player('House',1000):Hand(0)} #dict of player: Hand(bet) pairs, planning to replace Hand with list of Hands for splits, and handle errors dwnstream
+    table_dict = {} #dict of player: Hand(bet) pairs, planning to replace Hand with list of Hands for splits, and handle errors dwnstream
     
     #gather bets
     for player in players_list: 
-        if player.get_name() == 'House': continue
+        if player == 'House': 
+            table_dict.update({player:Hand(0)}) #set up empty hand for House
+            continue #and skip to next player
         player = take_bet(player) #assures bet is within acceptable range & edits player attribute
         if player.get_bet() > 0:
-            table_dict.update({player:Hand(player.get_bet())}) #creates new hand with player bet
+            table_dict.update({player:Hand(player.get_bet())}) #creates new empty hand with player bet
 
          #create Table object, highest level container
     table = Table(table_dict, Deck())
     return table
-
-
+    
 def play_blackjack(players_list):
     '''
     Plays multiple hands, Changes player balances accordingly, repeats until no bets or stop command given
@@ -490,32 +500,19 @@ def play_blackjack(players_list):
         #dealer's turn
         table = dealers_turn(table) 
 
+        #adjust player balances based on hands in comparison to dealer
+        table = score_table(table)
+
         
-    #adjust player balances based on hands in comparison to dealer
-    table = score_table(table)
-    return table
         
+    return table  
         
 def build_players_list(players_list):
     '''
     - Takes input from users, builds list with up to max # of players
     - returns list containing all player objects
     '''
-    
-    # stop = False
-    # while len(players_list) < 2 and stop == False: ##change max game size here##
-    #     if len(players_list) == 0:
-    #         while True:
-    #             try: 
-    #                 name = str(input("Enter 1st player name, or enter '*' to quit game: "))
-    #                 break
-    #             except: pass
-    #     else: 
-    #         while True:
-    #             try: 
-    #                 name = str(input("Enter next player name, or enter '*' to stop adding players: "))
-    #                 break
-    #             except: pass
+    ######CODE FOR TESTING###########
     for name in ['Kev', 'dyl', '*']: ###prefilled
         if name in players_list or name == 'House':
             print('Name already chosen.')
