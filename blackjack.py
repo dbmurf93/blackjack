@@ -274,21 +274,6 @@ class Table(object):
             i+=1
         print("Dealing complete\n")
 
-    def deal_cards_for_testing(self):
-        ''' 
-        test iterations to check:
-        1)deal everyone a split hand,
-        2)deal dealer blackjack 
-        
-        test iterations completed:
-        none
-        '''
-        for player in self.table_dict.keys():
-                self.table_dict[player].add_card(Card('7','Hearts',7))
-                self.table_dict[player].add_card(Card('7','Clubs',7)) #deal top card one at a time each player gets 2
-
-        print("Testing Deal complete\n")
-
     def all_player_turns(self): 
         '''
         Takes in Table obj. Checks for dealer blackjack 
@@ -330,35 +315,25 @@ class Table(object):
         ''' Shows players cards, partial view dict, & takes action as directed, updates table '''
         table_dict = self.table_dict
         hand = table_dict[player]
-        try: 
-            for h in hand: #when split hands are passed in
-                self.hit_or_stick(player, h) #plays em individually
+        print(f'\n\n{player.get_name()}: The table shows as follows:')
+        table.table_view(player) #prints table from player POV
         
-        except: #for when single hand objs passed in
-            print(f'\n\n{player.get_name()}: The table shows as follows:')
-            table.table_view(player) #prints table from player POV
-            
-            #if split is possible..
-            print(hand.cards[0] == hand.cards[1])
+        #if split is possible..
+        if hand.cards[0] == hand.cards[1]: 
+            bet = hand.get_bet()
+            if player.check_funds(bet): #proceeds if player has enough to split
+                print (f'Your hand is {hand.show_hand_all()}.')
+                print('Would you like to split your hand?')
+                ans = str(input('Enter "s" to split.\n')).lower()
+                if ans == 's':
+                    print ('splitting hand...')
+                    self.split_hand(player, bet, hand) #updates table with new player hand-list
+            else: #not enough funds to split
+                pass 
 
-
-            if hand.cards[0] == hand.cards[1]: 
-                bet = hand.get_bet()
-                if player.check_funds(bet): #proceeds if player has enough to split
-                    print('Would you like to split your hand?')
-                    ans = str(input('Enter "s" to split.\n')).lower()
-                    if ans == 's':
-                        print ('splitting hand...')
-                        self.play_split_hand(player, bet, hand) #updates table with new player hand-list
-                else: #not enough funds to split
-                    pass 
-
-            self.hit_or_stick(player, hand) #passes in hand in question, not sure this avoids playing a hand twice
+        self.hit_or_stick(player, hand) #plays any uncompleted hand passed into it
                 
-        
-        return table
-
-    def play_split_hand(self, player, bet, hand):
+    def split_hand(self, player, bet, hand):
         ''' splits hand, updates player balance for new bet, updates table '''
         hand1 = Hand(bet, hand.cards[0]) #breaks out indiv. cards
         hand1.add_card(self.deck.draw_card())
@@ -377,7 +352,7 @@ class Table(object):
 
     def hit_or_stick(self, player, hand):
         ''' prompts user until exit or bust, changes player and hand, & updates table '''
-        if hand.check_completed() != True: pass #skips completed hands
+        if hand.check_completed() != True: #skips completed hands
             while True: # loop operates on player and hand before adding to table 
                 print (f'Your hand is {hand.show_hand_all()}.')
                 print(f'{player}: Enter "H" to hit for another card, or "*" to stick with your current hand')
@@ -482,6 +457,24 @@ class Table(object):
             #adjust player balances based on hands in comparison to dealer
             self.score_table()
 
+    def deal_cards_for_testing(self):
+        ''' 
+        test iterations to check:
+        1)deal everyone a split hand,
+        2)deal dealer blackjack with players tie/lose
+        
+        test iterations completed:
+        -splits to players
+        '''
+        for player in self.table_dict.keys():
+                if player == 'House':
+                    self.table_dict[player].add_card(Card('A','Hearts',11))
+                    self.table_dict[player].add_card(Card('Jack','Clubs',10))
+                else:
+                    self.table_dict[player].add_card(Card('A','Hearts',11))
+                    self.table_dict[player].add_card(Card('A','Clubs',11)) #deal top card one at a time each player gets 2
+
+        print("Testing Deal complete\n")
          
 
 ##################
