@@ -56,39 +56,38 @@ class Player(object):
         self.bet = 0
         print(f'{self.name} you broke even. Your new balance is {self.balance}')
 
-def check_funds(player, amt):
-    ''' Returns True for acceptable bets, false for negative or too high '''
-    bal = player.get_balance()
-    if 0 > bal > amt:
-        return False
-    elif 0 >= bal >= amt:
-        return True
+    def take_bet(self):
+        ''' 
+        Processes user input to only allow integer bets within the acceptable range 0->Bal 
+        Edits Player.bet attribute & returns updated player obj
+        '''
+        while True: #input control loop
+            try:
+                balance = self.balance
+                bet = int(input(f"{self.name}: Enter a bet, in increments of $1. Enter 0 to skip this hand.\n")) 
+                if bet > balance: 
+                    try: bet = int(input('Enter a bet you can afford...'))
+                    except: pass
+                elif bet < 0: 
+                    bet = abs(bet)
+                    print('Ha Ha. Very Funny.')
+                else: break #balance is int within the acceptable range
 
-def take_bet(player):
-    ''' 
-    Takes in Player obj
-    Processes user input to only allow integer bets within the acceptable range 0->Bal 
-    Edits Player.bet attribute & returns updated player obj
-    '''
-    while True: #input control loop
-        try:
-            balance = player.get_balance()
-            bet = int(input(f"{player}: Enter a bet, in increments of $1. Enter 0 to skip this hand.\n")) 
-            if bet > balance: 
-                try: bet = int(input('Enter a bet you can afford...'))
-                except: pass
-            elif bet < 0: 
-                bet = abs(bet)
-                print('Ha Ha. Very Funny.')
-            else: break #balance is int within the acceptable range
+            except:
+                print(f"Must be a whole number that is less than or equal to your balance, ${self.balance}")
+                pass #keeps looping while incorrect input type
 
-        except:
-            print(f"Must be a whole number that is less than or equal to your balance, ${player.get_balance()}")
-            pass #keeps looping while incorrect input type
+        self.make_bet(bet) #saves bet (pulls from player bal)
+        print(f'${bet} from {self.name}\n') #confirm bet
+        return bet
 
-    player.make_bet(bet) #saves bet (pulls from player bal)
-    print(f'${bet} from {player.get_name()}\n') #confirm bet
-    return player
+    def check_funds(self, amt):
+        ''' Returns True for acceptable bets, false for negative or too high '''
+        bal = self.balance
+        if 0 > bal > amt:
+            return False
+        elif 0 >= bal >= amt:
+            return True
 
 
 
@@ -287,14 +286,24 @@ class Table(object):
             if player == 'House': continue #skips 
             hand = table_dict[player]
             table.play_hand(player, hand) #player chooses to add cards, split, and when to stop if no bust
+     
+    def table_view(self, player):
+        '''
+        Represents a player looking at the rest of the table (some cards will be face down)
+        Takes table obj and maps Hands to names instead of Player obj
+        for print
+        '''
+        for key in self.table_dict.keys(): #looks at each player&house 
+            if key == player: continue #skip self
+            print(f'{key}: {self.table_dict[key].show_hand_partial()}')
 
     def play_hand(self, player, hand):
         ''' Shows players cards, partial view dict, & takes action as directed, updates table '''
         table_dict = self.table_dict
         hand = table_dict[player]
         try:
-            for i in hand: #catches when split hands are passed in
-                table = play_hand(player, i, table) #plays em individually
+            for h in hand: #catches when split hands are passed in
+                self.play_hand(player, h) #plays em individually
         
         except(TypeError): #for when single hand objs passed in
             print(f'\n\n{player.get_name()}: The table shows as follows:')
@@ -303,7 +312,7 @@ class Table(object):
             #if split is possible..
             if hand.cards[0].get_card_name() == hand.cards[1].get_card_name(): 
                 bet = hand.get_bet()
-                if check_funds(player, bet): #proceeds if player has enough to split
+                if player.check_funds(bet): #proceeds if player has enough to split
                     print('Would you like to split your hand?')
                     ans = str(input('Enter "s" to split.\n')).lower()
                     if ans == 's':
@@ -385,17 +394,7 @@ class Table(object):
             else: 
                 print (f'{player} Busted.')
                 player.lose_bet()
-        
-    def table_view(self, player):
-        '''
-        Represents a player looking at the rest of the table (some cards will be face down)
-        Takes table obj and maps Hands to names instead of Player obj
-        for print
-        '''
-        for key in self.table_dict.keys(): #looks at each player&house 
-            if key == player: continue #skip self
-            print(f'{key}: {table_dict[key].show_hand_partial()}')
-
+   
     def balance_snapshot(self):
         ''' captures dict snapshot of players' balances for later reporting. Returns dict '''
         balance_snapshot = {} 
@@ -406,7 +405,41 @@ class Table(object):
     
         return balance_snapshot
 
+    def take_player_bets(self):
+        ''' Goes around the table and creates hands with bets for players '''
+        for player in self.table_dict: 
+            if player == 'House': 
+                self.table_dict.update({player:Hand(0)}) #set up empty hand for House
+                continue #and skip to next player
+            bet = player.take_bet() #assures bet is within acceptable range & edits player attribute
+            if bet > 0:
+                self.table_dict.update({player:Hand(player.get_bet())}) #creates new empty hand with player bet
 
+    def play_blackjack(self):
+        '''
+        Plays multiple hands, Changes player balances accordingly, repeats until no bets 
+        Returns updated players_list on exit
+        '''
+        self.take_player_bets() #to start round
+        while True:
+            ##dealing 2 cards to all seats
+            self.deal_cards()
+
+            #players' turns
+            self.all_player_turns() #returns updated table when done
+
+            #dealer's turn
+            self.dealers_turn() 
+
+            #adjust player balances based on hands in comparison to dealer
+            self.score_table()
+
+            self.take_player_bets() #breaks out if all non-house bets are 0
+            for player in self.table_dict:
+                if player == 'House': continue
+                elif player.get_bet() != 0: continue
+                break #if above conditions not met (bets are zero)
+         
 ##################
 ##################       
 
@@ -459,56 +492,18 @@ def check_keep_playing(players_list, balance_snapshot):
     return players_list
 
 def setup_table(players_list):
-    ''' Adds players and house to seats with empty hands, adds bets to each hand, and returns table '''
+    '''set up new table object, empty table_dict & fresh deck, returns table object '''    
     table_dict = {} #dict of player: Hand(bet) pairs, planning to replace Hand with list of Hands for splits, and handle errors dwnstream
-    
-    #gather bets
-
     #create Table object, highest level container, w/ new deck
     table = Table(table_dict, Deck())
+
     return table
     
-def take_player_bets(self):
-    for player in self.table_dict: 
-        if player == 'House': 
-            self.table_dict.update({player:Hand(0)}) #set up empty hand for House
-            continue #and skip to next player
-        player = take_bet(player) #assures bet is within acceptable range & edits player attribute
-        if player.get_bet() > 0:
-            self.table_dict.update({player:Hand(player.get_bet())}) #creates new empty hand with player bet
 
 
 
 
-def play_blackjack(players_list):
-    '''
-    Plays multiple hands, Changes player balances accordingly, repeats until no bets or stop command given
-    Returns updated players_list on exit
-    '''
-    stop = False
-    ##Table setup    
-    table = setup_table(players_list)
 
-    while stop == False:
-
-        ##dealing 2 cards to all seats
-        table.deal_cards()
-
-        #players' turns
-        table.all_player_turns() #returns updated table when done
-
-        #dealer's turn
-        table.dealers_turn() 
-
-        #adjust player balances based on hands in comparison to dealer
-        table.score_table()
-
-        ##Table setup    
-        table = setup_table(players_list)
-
-        
-        
-    return table  
         
 def build_players_list(players_list):
     '''
@@ -537,22 +532,27 @@ if __name__ == "__main__":
     keep_playing = True
     print("WELCOME TO BLACKJACK")
 
-    #pass in empty list and include dealer 
-    table = build_players_list([]).append(Player('House',1000)) 
+    #pass in empty list and add dealer to table
+    players_list = build_players_list([]).append(Player('House',1000)) 
 
     while keep_playing == True: #Keeps playing until bets stop
+        ##Table setup    
+        table = setup_table(players_list) #sets up new Table obj, clears dict and takes bets
+
         #beginning of a "round" (contains multiple hands dealt)
         balance_snapshot = table.balance_snapshot()
+        
+        table.play_blackjack() 
 
-        table = play_blackjack(table) 
-
+        #and then after each "round"
         players_list = check_keep_playing(table, balance_snapshot) #edits&returns players list based on who wants to keep playing, any leftover money is donated back to house...naturally.
 
+        
         if len(players_list) == 1: #exit program when empty table except house
             print('Bye for now!')
             keep_playing = False
 
-        elif len(players_list) > 1: 
+        elif len(players_list) > 1: #otherwise spin back up 
             print(f'Starting new game with {players_list[:-1]} and {players_list[-1:]}')
             
         else: print(f'Starting new game with {players_list}.')
