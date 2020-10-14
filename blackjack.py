@@ -279,16 +279,18 @@ class Table(object):
         table_dict = self.table_dict
         while i<2:
             for player in table_dict.keys():
+                new_hand = Hand(player.get_bet()) 
                 if i == 1: #2nd card 
-                    table_dict[player].add_card(self.deck.draw_card_facedown())#dealt face down
+                    new_hand.add_card(self.deck.draw_card_facedown())#dealt face down
                 else: 
-                    table_dict[player].add_card(self.deck.draw_card()) #deal top card one at a time each player gets 2
-            i+=1
+                    new_hand.add_card(self.deck.draw_card()) #deal top card one at a time each player gets 2
+            i+=1 #cards-dealt counter
+        self.table_dict[player].append(new_hand)
         print("Dealing complete\n")
 
     def check_dealer_blackjack(self):
         ''' Calculates dealer hand and returns T/F '''
-        dealers_score = self.table_dict['House'].get_hand_val()
+        dealers_score = self.table_dict['House'][0].get_hand_val()
         ##checking for dealer blackjack 1st
         if dealers_score == 21: 
             return True #if dealer does have 
@@ -351,19 +353,19 @@ class Table(object):
     def split_hand(self, player, bet, hand):
         ''' splits hand, updates player balance for new bet, updates table '''
         hand1 = Hand(bet, hand.cards[0]) #breaks out indiv. cards
-        hand1.add_card(self.deck.draw_card())
+        hand1.add_card(self.deck.draw_card()) #and deals card to new split hand
 
         player.make_bet(bet) #dbls player bet
         hand2 = Hand(bet, hand.cards[1])
         hand2.add_card(self.deck.draw_card())
-
-        if type(self.table_dict[player]) == list: #"if there's already been a split"
+        hand_list = self.table_dict[player]
+        print ('hand_list:', type(hand_list))
+        if len(self.table_dict[player]) > 1: #"if there's already been a split" list will be longer than one Hand obj
             self.table_dict[player].append(hand1)
             self.table_dict[player].append(hand2) 
         else: 
             self.table_dict[player] = [hand1,hand2] #overwrites Hand obj to list with 2 single card hands 
         
-
     def hit_or_stick(self, player, hand):
         ''' prompts user until exit or bust, changes player and hand, & updates table '''
         if hand.check_completed() != True: #skips completed hands
@@ -446,11 +448,13 @@ class Table(object):
         ''' Goes around the table and creates hands with bets for players '''
         for player in self.table_dict: 
             if player == 'House': 
-                self.table_dict.update({player:Hand(0)}) #set up empty hand for House
+                hand_list = []
+                hand_list.append(Hand(0))
+                self.table_dict.update({player:hand_list}) #set up empty hand for House
                 continue #and skip to next player
             bet = player.take_bet() #assures bet is within acceptable range & edits player attribute
             if bet > 0:
-                self.table_dict.update({player:Hand(player.get_bet())}) #creates new empty hand with player bet
+                self.table_dict[player].append(Hand(player.get_bet())) #adds to player's hand list
 
     def play_blackjack(self):
         '''
@@ -485,12 +489,17 @@ class Table(object):
         -splits to players
         '''
         for player in self.table_dict.keys():
-                if player == 'House':
-                    self.table_dict[player].add_card(Card('A','Hearts',11))
-                    self.table_dict[player].add_card(Card('9','Clubs',9))
-                else:
-                    self.table_dict[player].add_card(Card('A','Hearts',11))
-                    self.table_dict[player].add_card(Card('A','Clubs',11)) #deal top card one at a time each player gets 2
+            hand = Hand(0)
+
+            if player == 'House':
+                hand.add_card(Card('A','Hearts',11))
+                hand.add_card(Card('9','Clubs',9))
+            else:
+                hand.add_card(Card('A','Hearts',11))
+                hand.add_card(Card('A','Clubs',11)) 
+            
+            self.table_dict[player].append(hand)
+                    
 
         print("Testing Deal complete\n")
          
@@ -549,11 +558,12 @@ def check_keep_playing(players_list, balance_snapshot):
     return players_list
 
 def setup_table(players_list):
-    '''set up new table object, empty table_dict & fresh deck, returns table object '''    
+    '''takes in players_list of player obj, set up new table object, empty table_dict & fresh deck, returns table object '''    
     table_dict = {} #dict of player: Hand(bet) pairs, planning to replace Hand with list of Hands for splits, and handle errors dwnstream
     #create Table object, highest level container, w/ new deck
     for player in players_list:
-        table_dict.update({player:Hand(0)}) #empty spot for everyone
+        hand_list = []
+        table_dict.update({player:hand_list}) #empty spot for everyone but Hand obj in list
     table = Table(table_dict, Deck())
 
     return table
