@@ -188,6 +188,7 @@ def adjust_for_ace(hand): ##TODO
     pass
 
 
+
 class Deck(Card):
     '''
     Represents 
@@ -420,8 +421,13 @@ class Table(object):
         Plays multiple hands, Changes player balances accordingly, repeats until no bets 
         Returns updated players_list on exit
         '''
-        self.take_player_bets() #to start round
         while True:
+            self.take_player_bets() #breaks out if all non-house bets are 0
+            for player in self.table_dict:
+                if player == 'House': continue
+                elif player.get_bet() != 0: continue
+                break #if above conditions not met (bets are zero)
+            
             ##dealing 2 cards to all seats
             self.deal_cards()
 
@@ -434,12 +440,8 @@ class Table(object):
             #adjust player balances based on hands in comparison to dealer
             self.score_table()
 
-            self.take_player_bets() #breaks out if all non-house bets are 0
-            for player in self.table_dict:
-                if player == 'House': continue
-                elif player.get_bet() != 0: continue
-                break #if above conditions not met (bets are zero)
          
+
 ##################
 ##################       
 
@@ -495,16 +497,12 @@ def setup_table(players_list):
     '''set up new table object, empty table_dict & fresh deck, returns table object '''    
     table_dict = {} #dict of player: Hand(bet) pairs, planning to replace Hand with list of Hands for splits, and handle errors dwnstream
     #create Table object, highest level container, w/ new deck
+    for player in players_list:
+        table_dict.update({player:Hand(0)}) #empty spot for everyone
     table = Table(table_dict, Deck())
 
     return table
     
-
-
-
-
-
-        
 def build_players_list(players_list):
     '''
     - Takes input from users, builds list with up to max # of players
@@ -533,7 +531,8 @@ if __name__ == "__main__":
     print("WELCOME TO BLACKJACK")
 
     #pass in empty list and add dealer to table
-    players_list = build_players_list([]).append(Player('House',1000)) 
+    players_list = build_players_list([])
+    players_list.append(Player('House',1000)) 
 
     while keep_playing == True: #Keeps playing until bets stop
         ##Table setup    
