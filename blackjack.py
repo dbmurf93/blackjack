@@ -59,7 +59,7 @@ class Player(object):
     def take_bet(self):
         ''' 
         Processes user input to only allow integer bets within the acceptable range 0->Bal 
-        Edits Player.bet attribute & returns updated player obj
+        Edits Player.bet attribute & updates player obj
         '''
         while True: #input control loop
             try:
@@ -385,13 +385,17 @@ class Table(object):
             if player == 'House': continue
             score = td[player].get_hand_val()
             if score <= 21:
-                if score > dealers_score:
+                if score > dealers_score: 
                     player.win_bet()
+
                 elif score == dealers_score:
                     player.keep_bet()
 
                 elif score < dealers_score and dealers_score <= 21:
                     player.lose_bet()
+
+                elif score < dealers_score and dealers_score > 21:
+                    player.win_bet() 
             else: 
                 print (f'{player} Busted.')
                 player.lose_bet()
@@ -421,13 +425,11 @@ class Table(object):
         Plays multiple hands, Changes player balances accordingly, repeats until no bets 
         Returns updated players_list on exit
         '''
-        while True:
+        stop = False
+        while stop == False:
             self.take_player_bets() #breaks out if all non-house bets are 0
-            for player in self.table_dict:
-                if player == 'House': continue
-                elif player.get_bet() != 0: continue
-                break #if above conditions not met (bets are zero)
-            
+            if all(player.get_bet() == 0 for player in self.table_dict):
+                break
             ##dealing 2 cards to all seats
             self.deal_cards()
 
@@ -454,6 +456,7 @@ def check_keep_playing(players_list, balance_snapshot):
     '''
     iteration_list = players_list.copy()
     for player in iteration_list: #reports score and asks to play again, removes players not playing
+        if player == 'House': continue
         ref_balance = balance_snapshot[player] #balance before this round started
         balance = player.get_balance()  #current balance
         name = player.get_name()
@@ -544,7 +547,7 @@ if __name__ == "__main__":
         table.play_blackjack() 
 
         #and then after each "round"
-        players_list = check_keep_playing(table, balance_snapshot) #edits&returns players list based on who wants to keep playing, any leftover money is donated back to house...naturally.
+        players_list = check_keep_playing(players_list, balance_snapshot) #edits&returns players list based on who wants to keep playing, any leftover money is donated back to house...naturally.
 
         
         if len(players_list) == 1: #exit program when empty table except house
@@ -552,7 +555,9 @@ if __name__ == "__main__":
             keep_playing = False
 
         elif len(players_list) > 1: #otherwise spin back up 
-            print(f'Starting new game with {players_list[:-1]} and {players_list[-1:]}')
-            
-        else: print(f'Starting new game with {players_list}.')
+            print(f'Starting new game with:')
+            for player in players_list:
+                if player == 'House': continue
+                print (player)            
+        
             
