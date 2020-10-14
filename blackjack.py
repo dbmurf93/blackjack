@@ -146,8 +146,17 @@ class Hand(Card):
 
     def get_hand_val(self):
         value = 0
+        ace_ct = 0
         for card in self.cards:
+            if card.get_card_name() = 'A': #count if Ace
+                ace_ct += 1
             value += card.get_value()
+        if value > 21:
+            while ace_ct > 0: #skips for no Aces
+                value -= 10 
+                ace_ct -= 1
+                if value > 21: continue
+
         return value
     
     def get_bet(self):
@@ -177,7 +186,7 @@ class Hand(Card):
             res.append(repr(card))
         res = ', '.join(res)
 
-        if self.value <= 21:
+        if self.get_hand_val() <= 21:
             return res 
         else: return res + '   BUST'
 
@@ -308,14 +317,15 @@ class Table(object):
         for print
         '''
         for key in self.table_dict.keys(): #looks at each player&house 
-            hand = self.table_dict[Player]
+            hand = self.table_dict[player]
             # if key == player: continue #skip self ##skip for debugging
             try: print(f'{key}: {self.table_dict[key].show_hand_partial()}')
             except: #for list
-                hand_list = self.table_dict[player]
-                lambda x: hand_list.append(repr(x)) for x in hand_list
-                res = ''.join()
-                print (res)
+                hand_list = []
+                for x in self.table_dict[player]:
+                    hand_list.append(str(x)) 
+                
+                print (f'{player}:', hand_list)
 
     def play_hand(self, player, hand):
         ''' Shows players cards, partial view dict, & takes action as directed, updates table '''
