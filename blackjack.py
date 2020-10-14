@@ -308,13 +308,14 @@ class Table(object):
         for print
         '''
         for key in self.table_dict.keys(): #looks at each player&house 
-            #if key == player: continue #skip self
-            
+            hand = self.table_dict[Player]
+            # if key == player: continue #skip self ##skip for debugging
             try: print(f'{key}: {self.table_dict[key].show_hand_partial()}')
-            except:
+            except: #for list
                 hand_list = self.table_dict[player]
-                for hand in hand_list:
-                    print(f'{key}: {hand.show_hand_partial()}')
+                lambda x: hand_list.append(repr(x)) for x in hand_list
+                res = ''.join()
+                print (res)
 
     def play_hand(self, player, hand):
         ''' Shows players cards, partial view dict, & takes action as directed, updates table '''
