@@ -138,6 +138,7 @@ class Hand(Card):
         self.cards = []
         if card != None: self.cards.append(card)
         self.bet = bet
+        self.completed = False
     
     def add_card(self, card):
         ''' Adds Card obj to list and recalculates hand val '''
@@ -187,8 +188,17 @@ class Hand(Card):
         ','.join(res)
         return res
 
-def adjust_for_ace(hand): ##TODO
-    pass
+    def mark_completed(self):
+        self.completed = True
+        print ('Moving on...')
+
+    def check_completed(self):
+        return self.completed
+
+    def adjust_for_ace(self): 
+        ace_count = sum(  ('A' in i) for i in repr(self)  )
+        print (ace_count, "aces.")
+        self.get_hand_val()
 
 
 
@@ -367,22 +377,22 @@ class Table(object):
 
     def hit_or_stick(self, player, hand):
         ''' prompts user until exit or bust, changes player and hand, & updates table '''
-        
-        while True: # loop operates on player and hand before adding to table 
-            print (f'Your hand is {hand.show_hand_all()}.')
-            print(f'{player}: Enter "H" to hit for another card, or "*" to stick with your current hand')
-            ans = str(input("(H / *)  :   ")).lower()
-            if ans ==  'h':
-                hand.add_card(self.deck.draw_card()) #pull card from the deck and add to player hand
+        if hand.check_completed() != True: pass #skips completed hands
+            while True: # loop operates on player and hand before adding to table 
+                print (f'Your hand is {hand.show_hand_all()}.')
+                print(f'{player}: Enter "H" to hit for another card, or "*" to stick with your current hand')
+                ans = str(input("(H / *)  :   ")).lower()
+                if ans ==  'h':
+                    hand.add_card(self.deck.draw_card()) #pull card from the deck and add to player hand
 
-            elif ans == '*':
-                print(f'{player} chooses to stand at {hand.get_hand_val()}.\n\n')
-                break
-            if hand.get_hand_val() > 21:
-                print (f'{player}, Your hand is {hand.show_hand_all()}.\nBUST!\n\n')
-                break
+                elif ans == '*':
+                    print(f'{player} chooses to stand at {hand.get_hand_val()}.\n\n')
+                    break
+                if hand.get_hand_val() > 21:
+                    print (f'{player}, Your hand is {hand.show_hand_all()}.\nBUST!\n\n')
+                    break
 
-        self.table_dict.update({player:hand}) #overwrites info at slot
+            self.table_dict.update({player:hand.mark_completed()}) #overwrites info at slot
 
     def dealers_turn(self):
         '''
