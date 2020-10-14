@@ -148,14 +148,15 @@ class Hand(Card):
         value = 0
         ace_ct = 0
         for card in self.cards:
-            if card.get_card_name() = 'A': #count if Ace
+            if card.get_card_name() == 'A': #count if Ace
                 ace_ct += 1
             value += card.get_value()
-        if value > 21:
-            while ace_ct > 0: #skips for no Aces
+        while ace_ct > 0: #skips for no Aces
+            if value > 21:
                 value -= 10 
                 ace_ct -= 1
-                if value > 21: continue
+                if value > 21: continue #loop until value within range or aces used up
+            else: break
 
         return value
     
@@ -188,7 +189,7 @@ class Hand(Card):
 
         if self.get_hand_val() <= 21:
             return res 
-        else: return res + '   BUST'
+        else: return res + ' - BUST'
 
     def __repr__(self):
         res = []
@@ -317,7 +318,7 @@ class Table(object):
         for print
         '''
         for key in self.table_dict.keys(): #looks at each player&house 
-            hand = self.table_dict[player]
+            # hand = self.table_dict[player]
             # if key == player: continue #skip self ##skip for debugging
             try: print(f'{key}: {self.table_dict[key].show_hand_partial()}')
             except: #for list
@@ -350,7 +351,8 @@ class Table(object):
                         print ('splitting hand...')
                         self.split_hand(player, bet, hand) #updates table with new player hand-list
                         hand_list = self.table_dict[player]
-                        self.play_hand(player, hand_list)
+                        for h in hand_list:
+                            self.hit_or_stick(player, h)
 
             else: self.hit_or_stick(player, hand) #plays any uncompleted hand passed into it
                 
@@ -374,8 +376,9 @@ class Table(object):
         ''' prompts user until exit or bust, changes player and hand, & updates table '''
         if hand.check_completed() != True: #skips completed hands
             while True: # loop operates on player and hand before adding to table 
-                print ('Table shows:', self.table_view(player))
-                print (f'Your hand is {hand.show_hand_all()}.')
+                print ('Table shows:')
+                self.table_view(player)
+                print (f'Your hand, {player}, is {hand.show_hand_all()}.')
                 print(f'{player}: Enter "H" to hit for another card, or "*" to stick with your current hand')
                 ans = str(input("(H / *)  :   ")).lower()
                 if ans ==  'h':
