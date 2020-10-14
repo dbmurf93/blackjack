@@ -259,7 +259,22 @@ class Table(object):
                 else: 
                     table_dict[player].add_card(self.deck.draw_card()) #deal top card one at a time each player gets 2
             i+=1
-        print("Deal complete\n")
+        print("Dealing complete\n")
+
+    def deal_cards_for_testing(self):
+        ''' 
+        test iterations to check:
+        1)deal everyone a split hand,
+        2)deal dealer blackjack 
+        
+        test iterations completed:
+        none
+        '''
+        for player in self.table_dict.keys():
+                self.table_dict[player].add_card(Card('7','Hearts',7))
+                self.table_dict[player].add_card(Card('7','Clubs',7)) #deal top card one at a time each player gets 2
+
+        print("Testing Deal complete\n")
 
     def all_player_turns(self): 
         '''
@@ -311,6 +326,9 @@ class Table(object):
             table.table_view(player) #prints table from player POV
             
             #if split is possible..
+            print(hand.cards[0].get_name())
+            print(hand.cards[1].get_name())
+
             if hand.cards[0].get_card_name() == hand.cards[1].get_card_name(): 
                 bet = hand.get_bet()
                 if player.check_funds(bet): #proceeds if player has enough to split
