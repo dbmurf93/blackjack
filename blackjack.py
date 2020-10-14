@@ -197,7 +197,8 @@ class Hand(Card):
         res = []
         for card in self.cards:
             res.append(repr(card))
-        ','.join(res)
+
+        res = ','.join(res)
         return res
 
     def mark_completed(self):
@@ -332,18 +333,20 @@ class Table(object):
         
         ##would like to try returns hand as single obj or list
         '''
-        ans='' #create empty var
-
+        """ 
         print(f'\n\n{player.get_name()}: The table shows as follows:')
+        print ('handlist:',self.table_dict[player])
         self.table_view(player) #prints table from player POV
         print('Hand:',hand) ##debugging
-        #if split is possible..
+         """
+        ans='' #create empty var
+        #if split is possible.. 
         if hand.cards[0] == hand.cards[1]: 
             bet = hand.get_bet()
             if player.check_funds(bet): #proceeds if player has enough to split
                 print (f'Your hand is {hand.show_hand_all()}.')
                 print('Would you like to split your hand?')
-                ans = str(input('Enter "s" to split.\n')).lower()
+                ans = str(input('Enter "S" to split.\n')).lower()
         
         if ans == 's':
                     print ('splitting hand...')
@@ -355,21 +358,20 @@ class Table(object):
         else: self.hit_or_stick(player, hand) #plays any uncompleted hand passed into it
             
     def split_hand(self, player, bet, hand):
-        ''' splits hand, updates player balance for new bet, updates table '''
+        ''' splits hand in two, updates player balance for new bet, updates self.table '''
+        
         hand1 = Hand(bet, hand.cards[0]) #breaks out indiv. cards
         hand1.add_card(self.deck.draw_card()) #and deals card to new split hand
 
         player.make_bet(bet) #dbls player bet
         hand2 = Hand(bet, hand.cards[1])
         hand2.add_card(self.deck.draw_card())
+
         hand_list = self.table_dict[player]
-        print ('hand_list:', type(hand_list))
-        if len(self.table_dict[player]) > 1: #"if there's already been a split" list will be longer than one Hand obj
-            self.table_dict[player].append(hand1)
-            self.table_dict[player].append(hand2) 
-        else: 
-            self.table_dict[player] = [hand1,hand2] #overwrites Hand obj to list with 2 single card hands 
-        
+        self.table_dict[player] = hand_list[:-1] #pull off the most recent and replace with two new
+        self.table_dict[player].append(hand1) 
+        self.table_dict[player].append(hand2) 
+      
     def hit_or_stick(self, player, hand):
         ''' prompts user until exit or bust, changes player and hand, & updates table '''
         if hand.check_completed() != True: #skips completed hands
