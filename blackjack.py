@@ -195,7 +195,7 @@ class Hand(Card):
     def check_completed(self):
         return self.completed
 
-    def adjust_for_ace(self): 
+    def adjust_for_ace(self): ##TODO 
         ace_count = sum(  ('A' in i) for i in repr(self)  )
         print (ace_count, "aces.")
         self.get_hand_val()
@@ -308,30 +308,40 @@ class Table(object):
         for print
         '''
         for key in self.table_dict.keys(): #looks at each player&house 
-            if key == player: continue #skip self
-            print(f'{key}: {self.table_dict[key].show_hand_partial()}')
+            #if key == player: continue #skip self
+            
+            try: print(f'{key}: {self.table_dict[key].show_hand_partial()}')
+            except:
+                hand_list = self.table_dict[player]
+                for hand in hand_list:
+                    print(f'{key}: {hand.show_hand_partial()}')
 
     def play_hand(self, player, hand):
         ''' Shows players cards, partial view dict, & takes action as directed, updates table '''
-        table_dict = self.table_dict
-        hand = table_dict[player]
-        print(f'\n\n{player.get_name()}: The table shows as follows:')
-        table.table_view(player) #prints table from player POV
+        ans='' #create empty var
+        try: 
+            for h in hand: #when split hands are passed in
+                self.hit_or_stick(player, h) #plays em individually
         
-        #if split is possible..
-        if hand.cards[0] == hand.cards[1]: 
-            bet = hand.get_bet()
-            if player.check_funds(bet): #proceeds if player has enough to split
-                print (f'Your hand is {hand.show_hand_all()}.')
-                print('Would you like to split your hand?')
-                ans = str(input('Enter "s" to split.\n')).lower()
-                if ans == 's':
-                    print ('splitting hand...')
-                    self.split_hand(player, bet, hand) #updates table with new player hand-list
-            else: #not enough funds to split
-                pass 
+        except: #for when single hand objs passed in
+            print(f'\n\n{player.get_name()}: The table shows as follows:')
+            table.table_view(player) #prints table from player POV
+            
+            #if split is possible..
+            if hand.cards[0] == hand.cards[1]: 
+                bet = hand.get_bet()
+                if player.check_funds(bet): #proceeds if player has enough to split
+                    print (f'Your hand is {hand.show_hand_all()}.')
+                    print('Would you like to split your hand?')
+                    ans = str(input('Enter "s" to split.\n')).lower()
+            
+            if ans == 's':
+                        print ('splitting hand...')
+                        self.split_hand(player, bet, hand) #updates table with new player hand-list
+                        hand_list = self.table_dict[player]
+                        self.play_hand(player, hand_list)
 
-        self.hit_or_stick(player, hand) #plays any uncompleted hand passed into it
+            else: self.hit_or_stick(player, hand) #plays any uncompleted hand passed into it
                 
     def split_hand(self, player, bet, hand):
         ''' splits hand, updates player balance for new bet, updates table '''
@@ -345,15 +355,15 @@ class Table(object):
         if type(self.table_dict[player]) == list: #"if there's already been a split"
             self.table_dict[player].append(hand1)
             self.table_dict[player].append(hand2) 
-        else: self.table_dict.update({player:[hand1,hand2]}) #overwrites Hand obj to list with 2 single card hands 
+        else: 
+            self.table_dict[player] = [hand1,hand2] #overwrites Hand obj to list with 2 single card hands 
         
-        for hand in self.table_dict[player]:
-            self.play_hand(player, hand)
 
     def hit_or_stick(self, player, hand):
         ''' prompts user until exit or bust, changes player and hand, & updates table '''
         if hand.check_completed() != True: #skips completed hands
             while True: # loop operates on player and hand before adding to table 
+                print ('Table shows:', self.table_view(player))
                 print (f'Your hand is {hand.show_hand_all()}.')
                 print(f'{player}: Enter "H" to hit for another card, or "*" to stick with your current hand')
                 ans = str(input("(H / *)  :   ")).lower()
