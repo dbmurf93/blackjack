@@ -317,7 +317,7 @@ class Table(object):
                     print('Would you like to split your hand?')
                     ans = str(input('Enter "s" to split.\n')).lower()
                     if ans == 's':
-                        table.split_hand(player, bet, hand) #updates table with new player hand-list
+                        self.play_split_hand(player, bet, hand) #updates table with new player hand-list
                 else: #not enough funds to split
                     pass 
 
@@ -326,7 +326,7 @@ class Table(object):
         
         return table
 
-    def split_hand(self, player, bet, hand):
+    def play_split_hand(self, player, bet, hand):
         ''' splits hand, updates player balance for new bet, updates table '''
         hand1 = Hand(bet, hand.cards[0]) #breaks out indiv. cards
         player.make_bet(bet) #dbls player bet
@@ -511,16 +511,22 @@ def build_players_list(players_list):
     - Takes input from users, builds list with up to max # of players
     - returns list containing all player objects
     '''
-    ######CODE FOR TESTING###########
-    for name in ['Kev', 'dyl', '*']: ###prefilled
+    while len(players_list) < 3:
+        try:
+            name = str(input("Choose your name."))
+        except: pass #resets if user enters impossible str
+        player = Player(name) #formats name str and creates obj
         if name in players_list or name == 'House':
-            print('Name already chosen.')
+            print ('Name already taken')
+            continue
+
         elif name == '*':
+            print('Done adding players.\n')
             break
-        else: 
-            player = Player(name)
+        else:
             players_list.append(player) 
             print(f'Hello and welcome {player.get_name()}, your starting balance is $50.')
+            
         
     return players_list
 
