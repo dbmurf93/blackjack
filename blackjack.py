@@ -8,7 +8,6 @@ import random
 class Player(object):
     '''  Represents a player with a name, balance, and current bet'''
     def __init__(self, name, balance = 50, bet = 0):
-        name = name[0].upper() + name[1:].lower() #capitalize just first leter, assuming str(name) correctly formatted
         self.name = name
         self.balance = balance
         self.bet = bet
@@ -305,53 +304,36 @@ class Table(object):
         for key in self.table_dict.keys(): #looks at each player&house 
             res = []
             # if key == player: continue #skip self ##skip for debugging
-            print('type:',type(self.table_dict[key]))
             try: 
                 for hand in self.table_dict[key]:
                     res.append(hand.show_hand_partial())
             except: 
                 print(f"issue printing {player}'s hand")
             print(f'{key}: {res}')
+        print('\n')
              
 
     def player_turn(self, player, hand_list): 
         '''
-        Takes in Table obj. Checks for dealer blackjack 
-        Processes user input to determine bets for each hand,  
+        Takes in list obj. 
+        sends 1 Hand obj at a time into hit_or_stick 
         returns played_hands
         '''
         played_hands = []
         for hand in hand_list:
-            plyd_hand = self.play_hand(player, hand) #passes in single hand object
-            played_hands.append(plyd_hand)
+            if self.check_for_split(player, hand):
+                hand1, hand2 = self.split_hand(player, player.get_bet(), hand) 
+                played_hands.append(hand1)
+                played_hands.append(hand2)
+
+            else: 
+                plyd_hand = self.hit_or_stick(player, hand) #passes in single hand object
+                played_hands.append(plyd_hand)
     
         return played_hands
-
-
-    def play_hand(self, player, hand):
-        ''' 
-        single hand obj passed in, checks for splittable hand, 
-        takes action as directed, sends to hit_or_split
-        returns updated hand
-        '''
-        """ 
-        print(f'\n\n{player.get_name()}: The table shows as follows:')
-        print ('handlist:',self.table_dict[player])
-        self.table_view(player) #prints table from player POV
-        print('Hand:',hand) ##debugging
-         """
-        ans='' #create empty var
-        #if split is possible.. 
-        if self.check_for_split(player, hand):
-            hand_list = self.split_hand(player, player.get_bet(), hand)
-            print ('splitting hand...')
-            played_hands.append(self.player_turn(player, hand_list))
-
-        else: 
-            hand = self.hit_or_stick(player, hand) #plays any uncompleted hand passed into it
-            return hand
             
     def check_for_split(self, player, hand):
+        ''' checks cards, checks player funds, asks player if appropriate, returns T/F '''
         ans='' #create empty var
         #if split is possible.. 
         if hand.cards[0] == hand.cards[1]: #only compares 'name'
@@ -363,10 +345,8 @@ class Table(object):
 
         if ans == 's':
             print ('splitting hand...')
-            self.split_hand(player, bet, hand) #updates table with new player hand-list
-            hand_list = self.table_dict[player]
-            for h in hand_list:
-                self.player_turn(player, h)
+            return True
+        else: return False
                 
     def split_hand(self, player, bet, hand):
         ''' splits list containing hand obj into list w two new obj, updates player balance for new bet, overwrites self.table_dict '''
@@ -378,14 +358,16 @@ class Table(object):
         player.make_bet(bet) #dbls player bet edits player balance attr
         hand2 = Hand(bet, hand.cards[1])
         hand2.add_card(self.deck.draw_card())
-        if self.check_for_split(player,hand1):
 
-        hand_list = []
-        hand_list.append(hand1) #and replace with two new
-        hand_list.append(hand2) 
+        self.table_dict[player].pop(-1)
+        self.table_dict[player].append(hand1)
+        self.table_dict[player].append(hand2)
 
-        return hand_list
-      
+        hand1 = self.hit_or_stick(player, hand1)
+        hand2 = self.hit_or_stick(player, hand2)
+        
+        return hand1, hand2
+   
     def hit_or_stick(self, player, hand):
         ''' prompts user until exit or bust, changes player and hand, & updates table '''
         if hand.check_completed() != True: #skips completed hands
@@ -415,47 +397,48 @@ class Table(object):
         if no blackjack, hit as necessary, update self
         '''
         table_dict = self.table_dict
-        if self.check_dealer_blackjack() == False:
-            while True:
-                dealers_hand = table_dict['House']
-                dealers_score = dealers_hand.get_hand_val()
+        while True:
+            dealers_hand = table_dict['House'][0]
+            dealers_score = dealers_hand.get_hand_val()
 
-                if 17 < dealers_score <= 21:
-                    print ('Dealer scores:', dealers_score)
-                    break #continue to scoring
-                elif dealers_score <= 17:
-                    print ('Dealer takes a card..')
-                    print ('New hand =', self.table_dict[player])
-                    self.table_dict['House'].add_card(self.deck.draw_card())
-                elif dealers_score > 21:
-                    print ("Dealer busts!")
-                    break
+            if 17 < dealers_score <= 21:
+                print ('Dealer scores:', dealers_score)
+                break #continue to scoring
+            elif dealers_score <= 17:
+                print ('Dealer takes a card..')
+                print ('New hand =', self.table_dict[player])
+                self.table_dict['House'][0].add_card(self.deck.draw_card())
+            elif dealers_score > 21:
+                print ("Dealer busts!")
+                break
+        
 
     def score_table(self):
         '''
         compares cards from 'House' as ref. updates player bets based on win or loss.
         '''
-        dealers_hand = self.table_dict['House']
+        dealers_hand = self.table_dict['House'][0]
         dealers_score = dealers_hand.get_hand_val()
-        td = self.table_dict
-        for player in td:
-            if player == 'House': continue
-            score = td[player].get_hand_val()
-            if score <= 21:
-                if score > dealers_score: 
-                    player.win_bet()
+        
+        for player in self.table_dict.keys():
+            for hand in self.table_dict[player]:
+                if player == 'House': continue
+                score = hand.get_hand_val()
+                if score <= 21:
+                    if score > dealers_score: 
+                        player.win_bet()
 
-                elif score == dealers_score:
-                    player.keep_bet()
+                    elif score == dealers_score:
+                        player.keep_bet()
 
-                elif score < dealers_score and dealers_score <= 21:
+                    elif score < dealers_score and dealers_score <= 21:
+                        player.lose_bet()
+
+                    elif score < dealers_score and dealers_score > 21:
+                        player.win_bet() 
+                else: 
+                    print (f'{player} Busted.')
                     player.lose_bet()
-
-                elif score < dealers_score and dealers_score > 21:
-                    player.win_bet() 
-            else: 
-                print (f'{player} Busted.')
-                player.lose_bet()
    
     def balance_snapshot(self):
         ''' captures dict snapshot of players' balances for later reporting. Returns dict '''
@@ -501,7 +484,7 @@ class Table(object):
                     if player == 'House': continue #skips dealer
                     else: 
                         hand_list = self.table_dict[player]
-                        played_hands = self.player_turn(player,hand_list) #returns updated table when done
+                        played_hands = self.player_turn(player,hand_list) #returns updated hand list when done
                         self.table_dict[player] = played_hands #overwrite with played hands
 
             #dealer's turn
@@ -615,11 +598,15 @@ def build_players_list(players_list):
             players_list.append(Player('House',1000))  #add house with phat balance
             try:
                 name = str(input("\nFirst player, choose your name.\n")).strip().lower()
+                name = name.strip().lower()
+                name = name[0].upper() + name[1:].lower() 
+
             except: pass #resets if user enters impossible str
         else:
             try:
                 name = str(input("\nNext player, choose your name, or enter '*' to stop adding players.\n"))
                 name = name.strip().lower()
+                name = name[0].upper() + name[1:].lower() 
             except: pass #resets if user enters impossible str
         
         player = Player(name) #formats name str and creates obj
