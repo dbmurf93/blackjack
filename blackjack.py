@@ -235,7 +235,7 @@ class Deck(Card):
         self.new_shuffle()
     
     def new_shuffle(self): 
-        '''shuffles self.deck in place, returns list '''
+        '''shuffles self.deck in place '''
         self.deck = self.ref_deck.copy()
         random.shuffle(self.deck)
         print("Deck has been shuffled.")
@@ -366,8 +366,8 @@ class Table(object):
                 break #continue to scoring
             elif dealers_score <= 17:
                 print ('Dealer takes a card..')
-                print ('New hand =', self.table_dict[player])
                 self.table_dict['House'][0].add_card(self.deck.draw_card())
+                print ('New hand =', self.table_dict['House'])
             elif dealers_score > 21:
                 print ("Dealer busts!")
                 break
@@ -401,18 +401,21 @@ class Table(object):
    
     def deal_cards(self):
         ''' takes Table obj, deals 1up1dwn to each seat, updates table. '''
-        i=0 
-        while i<2:
-            for player in self.table_dict.keys():
-                new_hand = Hand(player.get_bet()) 
+        for player in self.table_dict.keys():
+            i=0 
+            new_hand = [Hand(player.get_bet())]
+            while i<2:
                 if i == 1: #2nd card 
-                    new_hand.add_card(self.deck.draw_card_facedown())#dealt face down
+                    card = self.deck.draw_card_facedown()
+                    new_hand[0].add_card(card)#dealt face down
                 else: 
-                    new_hand.add_card(self.deck.draw_card()) #deal top card one at a time each player gets 2
-            i+=1 #cards-dealt counter
-        self.table_dict[player].append(new_hand)
-        self.table_view("House")
+                    card = self.deck.draw_card()
+                    new_hand[0].add_card(card) #deal top card one at a time each player gets 2
+                i+=1 #cards-dealt counter
+            self.table_dict[player] = new_hand
+
         print("Dealing complete\n")
+        self.table_view('House')
 
     def check_dealer_blackjack(self):
         ''' Calculates dealer hand and returns T/F '''
