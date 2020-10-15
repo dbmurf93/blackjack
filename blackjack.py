@@ -317,23 +317,13 @@ class Table(object):
     def player_turn(self, player, hand_list): 
         '''
         Takes in Table obj. Checks for dealer blackjack 
-        Processes user input to determine bets for each hand, updates table dict. 
-        **Hands with 21+ should be excluded from further actions.
-
+        Processes user input to determine bets for each hand,  
         returns played_hands
         '''
-        hand_list = self.table_dict[player]
         played_hands = []
         for hand in hand_list:
-            if self.check_for_split(player, hand): 
-                print ('splitting hand...')
-                self.split_hand(player, player.get_bet(), hand) #updates self.table_dict with new player hand-list
-                hand_list = self.table_dict[player] #might be redundant, intended to update
-                for h in hand_list:
-                    played_hands.append(self.player_turn(player, h))
-            else:
-                plyd_hand = self.play_hand(player, hand) #passes in single hand object
-                played_hands.append(plyd_hand)
+            plyd_hand = self.play_hand(player, hand) #passes in single hand object
+            played_hands.append(plyd_hand)
     
         return played_hands
 
@@ -352,24 +342,14 @@ class Table(object):
          """
         ans='' #create empty var
         #if split is possible.. 
-        if hand.cards[0] == hand.cards[1]: #only compares 'name'
-            bet = hand.get_bet()
-            if player.check_funds(bet): #proceeds if player has enough to split
-                print (f'{player}, Your hand is {hand.show_hand_all()}.')
-                print('Would you like to split your hand?')
-                ans = str(input('Enter "S" to split.\n')).lower()
-        
-        if ans == 's':
+        if self.check_for_split(player, hand):
+            hand_list = self.split_hand(player, player.get_bet(), hand)
             print ('splitting hand...')
-            self.split_hand(player, bet, hand) #updates table with new player hand-list
-            hand_list = self.table_dict[player]
-            for h in hand_list:
-                self.player_turn(player, h)
+            played_hands.append(self.player_turn(player, hand_list))
 
         else: 
             hand = self.hit_or_stick(player, hand) #plays any uncompleted hand passed into it
-        
-        return hand
+            return hand
             
     def check_for_split(self, player, hand):
         ans='' #create empty var
@@ -389,21 +369,21 @@ class Table(object):
                 self.player_turn(player, h)
                 
     def split_hand(self, player, bet, hand):
-        ''' splits hand obj into two new, updates player balance for new bet, overwrites self.table_dict '''
+        ''' splits list containing hand obj into list w two new obj, updates player balance for new bet, overwrites self.table_dict '''
         
         ###
         hand1 = Hand(bet, hand.cards[0]) #breaks out indiv. cards
         hand1.add_card(self.deck.draw_card()) #and deals card to new split hand
 
-        player.make_bet(bet) #dbls player bet
+        player.make_bet(bet) #dbls player bet edits player balance attr
         hand2 = Hand(bet, hand.cards[1])
         hand2.add_card(self.deck.draw_card())
+        if self.check_for_split(player,hand1):
 
-        hand_list = self.table_dict[player]
-        hand_list.pop(-1) #pull off the most recent 
+        hand_list = []
         hand_list.append(hand1) #and replace with two new
         hand_list.append(hand2) 
-        self.table_dict[player] = hand_list
+
         return hand_list
       
     def hit_or_stick(self, player, hand):
