@@ -169,7 +169,7 @@ class Hand(Card):
         for card in self.cards:
             if card.visibility == 0:
                 res.append('[]')
-            else: res.append(str(card))
+            else: res.append(repr(card))
         return res
 
     def show_hand_all(self):
