@@ -136,7 +136,7 @@ class Hand(Card):
 
     def __init__(self, bet, card = None):
         self.cards = []
-        if card != None: self.cards.append(card)
+        if card != None: self.add_card(card)
         self.bet = bet
         self.completed = False
     
@@ -305,31 +305,37 @@ class Table(object):
         for key in self.table_dict.keys(): #looks at each player&house 
             res = []
             # if key == player: continue #skip self ##skip for debugging
-            for hand in self.table_dict[key]:
-                res.append(hand.show_hand_partial())
-            
+            print('type:',type(self.table_dict[key]))
+            try: 
+                for hand in self.table_dict[key]:
+                    res.append(hand.show_hand_partial())
+            except: 
+                print(f"issue printing {player}'s hand")
             print(f'{key}: {res}')
              
 
-    def all_player_turns(self): 
+    def player_turn(self, player, hand_list): 
         '''
         Takes in Table obj. Checks for dealer blackjack 
         Processes user input to determine bets for each hand, updates table dict. 
         **Hands with 21+ should be excluded from further actions.
+
+        returns played_hands
         '''
-        if not self.check_dealer_blackjack(): #if no dealer blackjack
-            ##player turn start
-            for player in self.table_dict.keys():
-                if player == 'House': continue #skips dealer
-                hand_list = self.table_dict[player]
-                for hand in hand_list:
-                    self.play_hand(player, hand) #passes in single hand object
- 
-    def play_hand(self, player, hand):
+        hand_list = self.table_dict[player]
+        played_hands = []
+        for hand in hand_list:
+            plyd_hand = self.play_hand(player, hand) #passes in single hand object
+            played_hands.append(plyd_hand)
+    
+        return played_hands
+
+
+    def play_hand(self, player, hand_list):
         ''' 
         single hand obj passed in, checks for splittable hand, 
         takes action as directed, sends to hit_or_split
-        doesn't technically update the table, 
+        returns updated hand 
         
         ##would like to try returns hand as single obj or list
         '''
@@ -341,24 +347,26 @@ class Table(object):
          """
         ans='' #create empty var
         #if split is possible.. 
-        if hand.cards[0] == hand.cards[1]: 
+        if hand.cards[0] == hand.cards[1]: #only compares 'name'
             bet = hand.get_bet()
             if player.check_funds(bet): #proceeds if player has enough to split
-                print (f'Your hand is {hand.show_hand_all()}.')
+                print (f'{player}, Your hand is {hand.show_hand_all()}.')
                 print('Would you like to split your hand?')
                 ans = str(input('Enter "S" to split.\n')).lower()
         
         if ans == 's':
-                    print ('splitting hand...')
-                    self.split_hand(player, bet, hand) #updates table with new player hand-list
-                    hand_list = self.table_dict[player]
-                    for h in hand_list:
-                        self.play_hand(player, h)
+            print ('splitting hand...')
+            self.split_hand(player, bet, hand) #updates table with new player hand-list
+            hand_list = self.table_dict[player]
+            for h in hand_list:
+                self.player_turn(player, h)
 
-        else: self.hit_or_stick(player, hand) #plays any uncompleted hand passed into it
+        else: 
+            hand = self.hit_or_stick(player, hand) #plays any uncompleted hand passed into it
             
-    def split_hand(self, player, bet, hand):
-        ''' splits hand in two, updates player balance for new bet, updates self.table '''
+
+    def split_hand(self, player, bet, hand_list):
+        ''' splits hand obj into two new, updates player balance for new bet, overwrites self.table_dict '''
         
         hand1 = Hand(bet, hand.cards[0]) #breaks out indiv. cards
         hand1.add_card(self.deck.draw_card()) #and deals card to new split hand
@@ -368,9 +376,11 @@ class Table(object):
         hand2.add_card(self.deck.draw_card())
 
         hand_list = self.table_dict[player]
-        self.table_dict[player] = hand_list[:-1] #pull off the most recent and replace with two new
-        self.table_dict[player].append(hand1) 
-        self.table_dict[player].append(hand2) 
+        hand_list.pop(-1) #pull off the most recent 
+        hand_list.append(hand1) #and replace with two new
+        hand_list.append(hand2) 
+        self.table_dict[player] = hand_list
+        return hand
       
     def hit_or_stick(self, player, hand):
         ''' prompts user until exit or bust, changes player and hand, & updates table '''
@@ -390,8 +400,11 @@ class Table(object):
                 if hand.get_hand_val() > 21:
                     print (f'{player}, Your hand is {hand.show_hand_all()}. - BUST!\n\n')
                     break
+            hand.mark_completed()
 
-            self.table_dict.update({player:hand.mark_completed()}) #overwrites info at slot
+            return hand
+
+
 
     def dealers_turn(self):
         '''
@@ -450,6 +463,8 @@ class Table(object):
     
         return balance_snapshot
 
+
+
     def take_player_bets(self):
         ''' Goes around the table and creates hands with bets for players '''
         for player in self.table_dict: 
@@ -477,7 +492,12 @@ class Table(object):
             self.deal_cards_for_testing() ##debugging
 
             #players' turns
-            self.all_player_turns() #returns updated table when done
+            if not self.check_dealer_blackjack():
+                for player in self.table_dict.keys():
+                    if player == 'House': continue #skips dealer
+                    else: 
+                        played_hands = self.player_turn(player) #returns updated table when done
+                        self.table_dict[player] = played_hands #overwrite with played hands
 
             #dealer's turn
             self.dealers_turn() 
