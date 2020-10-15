@@ -173,13 +173,13 @@ class Hand(Card):
         return res
 
     def show_hand_all(self):
-        """ Makes all cards visible, Returns formatted list """
+        """ Makes all cards visible to everyone at the table, Returns formatted list """
         res = []
         for card in self.cards:
             res.append(str(card)) 
             card.set_visibility_on() #flips over card once viewed   
         res = ', '.join(res)
-        return res + f'    total_value = {self.get_hand_val()}'
+        return res + f' ->(total_value = {self.get_hand_val()})'
 
     def __str__(self):
         res = []
@@ -187,11 +187,11 @@ class Hand(Card):
             res.append(repr(card))
         res = ', '.join(res)
 
-        if self.get_hand_val() <= 21:
-            return res 
-        elif self.get_hand_val() == 21 and len(self.cards) == 2:
+        if self.get_hand_val() == 21 and len(self.cards) == 2:
             return res + ' - BLACKJACK'
-        else: return res + ' - BUST'
+        elif self.get_hand_val() <= 21:
+            return res 
+        else: return res + '\nBUSTED!'
 
     def __repr__(self):
         res = []
