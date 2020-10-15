@@ -39,7 +39,6 @@ class Player(object):
     
     def lose_bet(self):
         loss = self.bet
-        self.bet = 0
         if self.balance != 0:
             print(f'{self.name} you lost {loss}....Your new balance is ${self.balance}')
         else: print('You lost everything....')
@@ -60,13 +59,15 @@ class Player(object):
         Processes user input to only allow integer bets within the acceptable range 0->Bal 
         Edits Player.bet attribute & updates player obj
         '''
+        balance = self.balance
         while True: #input control loop
             try:
-                balance = self.balance
                 bet = int(input(f"{self.name}: Enter a bet, in increments of $1. Enter 0 to skip this hand.\n")) 
                 if bet > balance: 
-                    try: bet = int(input('Enter a bet you can afford...'))
-                    except: pass
+                    try: 
+                        bet = int(input('Enter a bet you can afford...'))
+                        break
+                    except: continue
                 elif bet < 0: 
                     bet = abs(bet)
                     print('Ha Ha. Very Funny.')
@@ -270,7 +271,7 @@ class Table(object):
     def __str__(self):
         return self.table_dict #defers to player and hand repr methods
        
-
+    ####################
 
     def player_turn(self, player, hand_list): 
         '''
@@ -349,8 +350,7 @@ class Table(object):
 
         return hand
         
-
-
+    #####################
 
     def dealers_turn(self):
         '''
@@ -403,6 +403,7 @@ class Table(object):
         ''' takes Table obj, deals 1up1dwn to each seat, updates table. '''
         for player in self.table_dict.keys():
             i=0 
+            if player.get_bet() == 0 and player != 'House': continue
             new_hand = [Hand(player.get_bet())]
             while i<2:
                 if i == 1: #2nd card 
@@ -415,13 +416,12 @@ class Table(object):
             self.table_dict[player] = new_hand
 
         print("Dealing complete\n")
-        self.table_view('House')
 
     def check_dealer_blackjack(self):
         ''' Calculates dealer hand and returns T/F '''
         dealers_score = self.table_dict['House'][0].get_hand_val()
-        ##checking for dealer blackjack 1st
         if dealers_score == 21: 
+            print ('Yikes sorry. Dealer has Blackjack...')
             return True #if dealer does have 
         else: return False #if dealer doesnt have 
     
@@ -433,7 +433,7 @@ class Table(object):
         '''
         for key in self.table_dict.keys(): #looks at each player&house 
             res = []
-            # if key == player: continue #skip self ##skip for debugging
+            # if key == player: continue #skip self #skipped for debugging but I like the look
             try: 
                 for hand in self.table_dict[key]:
                     res.append(hand.show_hand_partial())
@@ -479,14 +479,14 @@ class Table(object):
             if all(player.get_bet() == 0 for player in self.table_dict):
                 break
 
-            ##dealing 2 cards to all seats
+            #dealing 2 cards to all seats
+            self.deck = Deck() #reshuffle/new deck
             self.deal_cards()
             # self.deal_cards_for_testing() ##debugging
 
             #players' turns
             if not self.check_dealer_blackjack():
                 for player in self.table_dict.keys():
-                    self.table_view(player)
                     if player == 'House': continue #skips dealer
                     else: 
                         hand_list = self.table_dict[player]
@@ -501,12 +501,7 @@ class Table(object):
 
     def deal_cards_for_testing(self):
         ''' 
-        test iterations to check:
-        1)deal everyone a split hand,
-        2)deal dealer blackjack with players tie/lose
-        
-        test iterations completed:
-        -splits to players
+        test iterations will be really important for debugging bigger stuff
         '''
         i = 0
         for player in self.table_dict.keys():
@@ -560,26 +555,24 @@ def check_keep_playing(players_list, balance_snapshot):
         print(f'{name}, You {win_or_lose}')
 
         try: ##ADD FUNCTION HERE## for better input control, same for name choosing.
-            ans = input('Keep Playing? (y/n)')
-            try: ans.lower().strip()
-            except: pass
+            ans = input('Keep Playing? (y/n)').lower().strip()
 
             if ans == 'y' or ans == 'yes': 
-                print(f'{name}, your starting balance will be ${player.get_balance()}.')
+                print(f'{name}, your starting balance will be ${player.get_balance()}.\n')
                 #continues to next player
 
             elif ans == 'n' or ans == 'no': #if not playing again, $$ donated back to house
                 if balance == 0:
-                    print('Sorry to see you go, thanks for playing!')
+                    print('Sorry to see you go, thanks for playing!\n')
                 else: 
-                    print(f'Sorry to see you go thanks for the ${balance}!')
+                    print(f'Sorry to see you go thanks for the ${balance}!\n')
                 players_list.remove(player)
                 #continues to next player
 
-        except: print("I'll just pretend I understood that, you will play again") 
+        except: print("I'll just pretend I understood that, you will play again\n") 
     
     if len(players_list) < 2:
-        build_players_list(players_list)  ##loops endlessly until 
+        build_players_list(players_list)  ##loops endlessly until reach capacity
 
     return players_list
 
