@@ -148,7 +148,7 @@ class Hand(Card):
         value = 0
         ace_ct = 0
         for card in self.cards:
-            if card.get_card_name() == 'A': #count if Ace
+            if card.get_card_name() == 'Ace': #count if Ace
                 ace_ct += 1
             value += card.get_value()
         while ace_ct > 0: #skips for no Aces
