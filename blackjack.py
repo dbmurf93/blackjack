@@ -4,9 +4,14 @@
 ### will be rejected outright, with haste
 
 import random
+max_table_size = 4
 
 class Player(object):
-    '''  Represents a player with a name, balance, and current bet'''
+    '''  
+    Represents a player with a name, balance, and current bet,
+    was thinking could add an attribute for playing_status, and store player balance 
+    so you cant just rest to get the starting $50
+    '''
     def __init__(self, name, balance = 50, bet = 0):
         self.name = name
         self.balance = balance
@@ -162,7 +167,7 @@ class Hand(Card):
         ''' Adds Card obj to list and recalculates hand val '''
         self.cards.append(card)
 
-    def get_hand_val(self):
+    def get_hand_val(self): ##TODO add 'Blackjack!' string
         value = 0
         ace_ct = 0
         for card in self.cards:
@@ -563,7 +568,7 @@ def check_keep_playing(players_list, balance_snapshot):
 
         except: print("I'll just pretend I understood that, you will play again\n") 
     
-    if len(players_list) < 2:
+    if len(players_list) < max_table_size:
         players_list = build_players_list(players_list)  ##loops endlessly until reach capacity
 
     return players_list
@@ -584,7 +589,7 @@ def build_players_list(players_list):
     - Takes input from users, builds list with up to max # of players
     - returns list containing all player objects
     '''
-    while len(players_list) < 4: #holds up to 3 players sitting across from House
+    while len(players_list) < max_table_size: #holds up to 3 players sitting across from House
         if len(players_list) == 0: #during setup, empty list passed in
             players_list.append(Player('House',1000))  #add house with phat balance
             try:
@@ -648,7 +653,7 @@ if __name__ == "__main__":
             print(f'Starting new game with:')
             for player in players_list:
                 if player == 'House': continue
-                res = player.get_name() + ':  $' + player.get_balance()
+                res = player.get_name() + ':  $' + str(player.get_balance())
                 print (res)            
         
             
