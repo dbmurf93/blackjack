@@ -1,9 +1,9 @@
 ### Welcome to blackjack, 
-### facilities are under construction, 
-###avoid bringing loved ones onto premises
+### we do not have a fancy README.md
+### all requests for fancy accoutrements 
+### will be rejected outright, with haste
 
 import random
-
 
 class Player(object):
     '''  Represents a player with a name, balance, and current bet'''
@@ -90,7 +90,6 @@ class Player(object):
             return True
 
 
-
 class Card(object):
     '''
     Represents card object with name & suit, as str
@@ -127,7 +126,6 @@ class Card(object):
         self.visibility = 1
 
 
-
 class Hand(Card):
     ''' 
     Represents a list of cards, with a bet value, and an total int value for calcs. 
@@ -139,6 +137,26 @@ class Hand(Card):
         if card != None: self.add_card(card)
         self.bet = bet
         self.completed = False
+
+    def __str__(self):
+        res = []
+        for card in self.cards:
+            res.append(repr(card))
+        res = ', '.join(res)
+
+        if self.get_hand_val() == 21 and len(self.cards) == 2:
+            return res + ' - BLACKJACK'
+        elif self.get_hand_val() <= 21:
+            return res 
+        else: return res + '\nBUSTED!'
+
+    def __repr__(self):
+        res = []
+        for card in self.cards:
+            res.append(repr(card))
+
+        res = ','.join(res)
+        return res
     
     def add_card(self, card):
         ''' Adds Card obj to list and recalculates hand val '''
@@ -164,7 +182,7 @@ class Hand(Card):
         return self.bet
     
     def show_hand_partial(self):
-        """ Returns list """
+        """ Returns visibility dependent list """
         res = []
         for card in self.cards:
             if card.visibility == 0:
@@ -173,7 +191,7 @@ class Hand(Card):
         return res
 
     def show_hand_all(self):
-        """ Makes all cards visible to everyone at the table, Returns formatted list """
+        """ Makes all cards visible to everyone at the table, Returns formatted str """
         res = []
         for card in self.cards:
             res.append(str(card)) 
@@ -181,38 +199,12 @@ class Hand(Card):
         res = ', '.join(res)
         return res + f' ->(total_value = {self.get_hand_val()})'
 
-    def __str__(self):
-        res = []
-        for card in self.cards:
-            res.append(repr(card))
-        res = ', '.join(res)
-
-        if self.get_hand_val() == 21 and len(self.cards) == 2:
-            return res + ' - BLACKJACK'
-        elif self.get_hand_val() <= 21:
-            return res 
-        else: return res + '\nBUSTED!'
-
-    def __repr__(self):
-        res = []
-        for card in self.cards:
-            res.append(repr(card))
-
-        res = ','.join(res)
-        return res
-
     def mark_completed(self):
         self.completed = True
         print ('Moving on...')
 
     def check_completed(self):
         return self.completed
-
-    def adjust_for_ace(self): ##TODO 
-        ace_count = sum(  ('A' in i) for i in repr(self)  )
-        print (ace_count, "aces.")
-        self.get_hand_val()
-
 
 
 class Deck(Card):
@@ -235,7 +227,7 @@ class Deck(Card):
         
         self.new_shuffle()
     
-    def new_shuffle(self): 
+    def new_shuffle(self): #self.deck shuffled on obj creation
         '''shuffles self.deck in place '''
         self.deck = self.ref_deck.copy()
         random.shuffle(self.deck)
@@ -256,7 +248,6 @@ class Deck(Card):
         return self.deck.pop(0)
 
 
-
 class Table(object):
     """ 
     Represents a dict of players: hands
@@ -271,7 +262,7 @@ class Table(object):
     def __str__(self):
         return self.table_dict #defers to player and hand repr methods
        
-    ####################
+    #####################
 
     def player_turn(self, player, hand_list): 
         '''
@@ -327,7 +318,24 @@ class Table(object):
         hand2 = self.hit_or_stick(player, hand2)
         
         return hand1, hand2
-   
+    
+    def table_view(self, player):
+        '''
+        Represents a player looking at the rest of the table (some cards will be face down)
+        Takes table obj and maps Hands to names instead of Player obj
+        for print
+        '''
+        for key in self.table_dict.keys(): #looks at each player&house 
+            res = []
+            # if key == player: continue #skip self #skipped for debugging but I like the look
+            try: 
+                for hand in self.table_dict[key]:
+                    res.append(hand.show_hand_partial())
+            except: 
+                print(f"issue printing {player}'s hand")
+            print(f'{key}: {res}')
+        print('\n')
+       
     def hit_or_stick(self, player, hand):
         ''' prompts user until exit or bust, changes player and hand, & updates table '''
         if hand.check_completed() == False: #skips completed hands
@@ -399,6 +407,24 @@ class Table(object):
                     print (f'{player} Busted.')
                     player.lose_bet()
    
+    #####################
+
+    def take_player_bets(self):
+        ''' Goes around the table and overwrites new hands with bets for players '''
+        for player in self.table_dict: 
+            hand_list = []
+            self.table_dict.update({player:hand_list}) #start w clean slate
+
+            if player == 'House': 
+                hand_list.append(Hand(0))
+                self.table_dict.update({player:hand_list}) #set up empty hand for House
+                continue #and skip to next player
+            
+            bet = player.take_bet() #assures bet is within acceptable range & edits player attribute
+            if bet > 0:
+                hand_list.append(Hand(bet))
+                self.table_dict.update({player:hand_list}) #overwrites to player's hand list
+
     def deal_cards(self):
         ''' takes Table obj, deals 1up1dwn to each seat, updates table. '''
         for player in self.table_dict.keys():
@@ -424,24 +450,7 @@ class Table(object):
             print ('Yikes sorry. Dealer has Blackjack...')
             return True #if dealer does have 
         else: return False #if dealer doesnt have 
-    
-    def table_view(self, player):
-        '''
-        Represents a player looking at the rest of the table (some cards will be face down)
-        Takes table obj and maps Hands to names instead of Player obj
-        for print
-        '''
-        for key in self.table_dict.keys(): #looks at each player&house 
-            res = []
-            # if key == player: continue #skip self #skipped for debugging but I like the look
-            try: 
-                for hand in self.table_dict[key]:
-                    res.append(hand.show_hand_partial())
-            except: 
-                print(f"issue printing {player}'s hand")
-            print(f'{key}: {res}')
-        print('\n')
-      
+  
     def balance_snapshot(self):
         ''' captures dict snapshot of players' balances for later reporting. Returns dict '''
         balance_snapshot = {} 
@@ -451,23 +460,7 @@ class Table(object):
             balance_snapshot.update({player:bal}) #save point for later comparison
     
         return balance_snapshot
-
-    def take_player_bets(self):
-        ''' Goes around the table and overwrites new hands with bets for players '''
-        for player in self.table_dict: 
-            hand_list = []
-            self.table_dict.update({player:hand_list}) #start w clean slate
-
-            if player == 'House': 
-                hand_list.append(Hand(0))
-                self.table_dict.update({player:hand_list}) #set up empty hand for House
-                continue #and skip to next player
-            
-            bet = player.take_bet() #assures bet is within acceptable range & edits player attribute
-            if bet > 0:
-                hand_list.append(Hand(bet))
-                self.table_dict.update({player:hand_list}) #overwrites to player's hand list
-
+    
     def play_blackjack(self):
         '''
         Plays multiple hands, Changes player balances accordingly, repeats until no bets 
@@ -529,7 +522,6 @@ class Table(object):
 ##################       
 
 
-
 def check_keep_playing(players_list, balance_snapshot):
     '''
     Asks each player if they want to play again.
@@ -572,7 +564,7 @@ def check_keep_playing(players_list, balance_snapshot):
         except: print("I'll just pretend I understood that, you will play again\n") 
     
     if len(players_list) < 2:
-        build_players_list(players_list)  ##loops endlessly until reach capacity
+        players_list = build_players_list(players_list)  ##loops endlessly until reach capacity
 
     return players_list
 
@@ -656,6 +648,7 @@ if __name__ == "__main__":
             print(f'Starting new game with:')
             for player in players_list:
                 if player == 'House': continue
-                print (player)            
+                res = player.get_name() + ':  $' + player.get_balance()
+                print (res)            
         
             
