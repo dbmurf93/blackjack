@@ -386,7 +386,7 @@ class Table(object):
         '''
         dealers_hand = self.table_dict['House'][0]
         dealers_score = dealers_hand.get_hand_val()
-        
+        print ('\nScoring:')
         for player in self.table_dict.keys():
             if player == 'House': continue
             for hand in self.table_dict[player]:
@@ -584,7 +584,7 @@ def build_players_list(players_list):
     - Takes input from users, builds list with up to max # of players
     - returns list containing all player objects
     '''
-    while len(players_list) < 3: #holds up to 3 players, COUNTING HOUSE 0
+    while len(players_list) < 4: #holds up to 3 players sitting across from House
         if len(players_list) == 0: #during setup, empty list passed in
             players_list.append(Player('House',1000))  #add house with phat balance
             try:
@@ -602,8 +602,8 @@ def build_players_list(players_list):
         
         player = Player(name) 
 
-        if player in players_list or player == 'House':
-            print ('Name already taken')
+        if player in players_list or player == 'House' or player == '':
+            print ('Invalid Name Choice')
             continue
         elif name == '*':
             print('Done adding players.\n')
