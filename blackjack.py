@@ -4,7 +4,7 @@
 ### will be rejected outright, with haste
 
 import random
-max_table_size = 4
+max_table_size = 4 #includes House 
 
 class Player(object):
     '''  
@@ -45,19 +45,20 @@ class Player(object):
     def lose_bet(self):
         loss = self.bet
         if self.balance != 0:
-            print(f'{self.name} you lost {loss}....Your new balance is ${self.balance}')
+            print(f'{self.name} you lost ${loss}....Your new balance is ${self.balance}')
         else: print('You lost everything....')
 
-    def win_bet(self, multiplier=1):
-        winnings = self.bet*(1 + multiplier) #original bet plus winnings 
-        self.balance += winnings
-        self.bet = 0 #reset bet
-        print(f'{self.name} you won {winnings}! Your new balance is {self.balance}')
+    def win_bet(self, multiplier=1.):
+        winnings = int(self.bet*(1 + multiplier)) #original bet plus winnings 
+        self.balance += winnings #adjust plyr bal first
+        winnings -= self.bet #subtract bet for print statement
+        self.bet = 0 #reset plyr bet 
+        print(f'{self.name} you won ${winnings}! Your new balance is ${self.balance}')
 
     def keep_bet(self):
         self.balance += self.bet
         self.bet = 0
-        print(f'{self.name} you broke even. Your new balance is {self.balance}')
+        print(f'{self.name} you broke even. Your new balance is ${self.balance}')
 
     def take_bet(self):
         ''' 
@@ -67,19 +68,18 @@ class Player(object):
         balance = self.balance
         while True: #input control loop
             try:
-                bet = int(input(f"{self.name}: Enter a bet, in increments of $1. Enter 0 to skip this hand.\n")) 
-                if bet > balance: 
-                    try: 
-                        bet = int(input('Enter a bet you can afford...'))
-                        break
-                    except: continue
+                bet = int(input(f"{self.name}: Enter a bet, in increments of $2. Enter 0 to skip this hand.\n")) 
+                if bet % 2 != 0:
+                    print('Must be an even number...')
+                elif bet > balance: 
+                    print('Enter a bet you can afford...')
                 elif bet < 0: 
                     bet = abs(bet)
                     print('Ha Ha. Very Funny.')
                 else: break #balance is int within the acceptable range
 
             except:
-                print(f"Must be a whole number that is less than or equal to your balance, ${self.balance}")
+                print(f"Must be an even, whole number that is less than or equal to your balance, ${self.balance}")
                 pass #keeps looping while incorrect input type
 
         self.make_bet(bet) #saves bet (pulls from player bal)
@@ -346,6 +346,9 @@ class Table(object):
         if hand.check_completed() == False: #skips completed hands
             while True: # loop operates on player and hand before adding to table 
                 print ('Table shows:')
+                if hand.get_hand_val() == 21 and len(hand.cards) == 2:
+                    print(f"{player} Blackjack!! Winner winner chicken dinner")
+                    break
                 self.table_view(player)
                 print (f'Your hand, {player}, is {hand.show_hand_all()}.')
                 print(f'{player}: Enter "H" to hit for another card, or "*" to stick with your current hand')
@@ -397,7 +400,10 @@ class Table(object):
             for hand in self.table_dict[player]:
                 score = hand.get_hand_val()
                 if score <= 21:
-                    if score > dealers_score: 
+                    if score == 21 and len(hand.cards)==2:
+                        player.win_bet(1.5)
+                        
+                    elif score > dealers_score: 
                         player.win_bet()
 
                     elif score == dealers_score:
@@ -406,8 +412,9 @@ class Table(object):
                     elif score < dealers_score and dealers_score <= 21:
                         player.lose_bet()
 
-                    elif score < dealers_score and dealers_score > 21:
+                    elif dealers_score > 21:
                         player.win_bet() 
+                    
                 else: 
                     print (f'{player} Busted.')
                     player.lose_bet()
@@ -448,6 +455,31 @@ class Table(object):
 
         print("Dealing complete\n")
 
+    def deal_cards_for_testing(self):
+        ''' 
+        test iterations will be really important for debugging bigger stuff
+        '''
+        i = 0
+        for player in self.table_dict.keys():
+            hand = Hand(player.get_bet())
+
+            if player == 'House':
+                hand.add_card(Card('A','Hearts',11))
+                hand.add_card(Card('9','Clubs',9))
+            elif i==0: #dealt to player 1
+                hand.add_card(Card('A','Hearts',11))
+                hand.add_card(Card('J','Clubs',10)) 
+                i+=1
+            elif i==1: #dealt to player 2
+                hand.add_card(Card('6','Hearts',6))
+                hand.add_card(Card('5','Clubs',5))
+
+            new_hand_list = [hand]
+            self.table_dict[player] = new_hand_list
+                    
+
+        print("Testing Deal complete\n")
+   
     def check_dealer_blackjack(self):
         ''' Calculates dealer hand and returns T/F '''
         dealers_score = self.table_dict['House'][0].get_hand_val()
@@ -496,32 +528,7 @@ class Table(object):
 
             #adjust player balances based on hands in comparison to dealer
             self.score_table()
-
-    def deal_cards_for_testing(self):
-        ''' 
-        test iterations will be really important for debugging bigger stuff
-        '''
-        i = 0
-        for player in self.table_dict.keys():
-            hand = Hand(0)
-
-            if player == 'House':
-                hand.add_card(Card('A','Hearts',11))
-                hand.add_card(Card('9','Clubs',9))
-            elif i==0: #dealt to player 1
-                hand.add_card(Card('A','Hearts',11))
-                hand.add_card(Card('A','Clubs',11)) 
-                i+=1
-            elif i==1: #dealt to player 2
-                hand.add_card(Card('6','Hearts',6))
-                hand.add_card(Card('5','Clubs',5))
-
-            
-            self.table_dict[player].append(hand)
-                    
-
-        print("Testing Deal complete\n")
-         
+      
 
 ##################
 ##################       
