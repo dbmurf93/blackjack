@@ -278,13 +278,12 @@ class Table(object):
         played_hands = []
         for hand in hand_list:
             if self.check_for_split(player, hand):
-                hand1, hand2 = self.split_hand(player, player.get_bet(), hand) #returns 2 plyd hands
-                played_hands.append(hand1)
-                played_hands.append(hand2)
-
+                plyd_hands = self.split_hand(player, player.get_bet(), hand) #returns 2 plyd hands
+                for each in plyd_hands:
+                    played_hands.append(each)
             else: 
                 plyd_hand = self.hit_or_stick(player, hand) #passes in single hand object
-                played_hands.append(plyd_hand)
+                if plyd_hand != None: played_hands.append(plyd_hand)
     
         return played_hands
             
@@ -305,9 +304,9 @@ class Table(object):
         else: return False
                 
     def split_hand(self, player, bet, hand):
-        ''' splits list containing hand obj into list w two new obj, updates player balance for new bet, overwrites self.table_dict '''
+        ''' input hand obj, breaks into list w two new obj, 
+        updates player balance for new bet, overwrites self.table_dict '''
         
-        ###
         hand1 = Hand(bet, hand.cards[0]) #breaks out indiv. cards
         hand1.add_card(self.deck.draw_card()) #and deals card to new split hand
 
@@ -315,14 +314,14 @@ class Table(object):
         hand2 = Hand(bet, hand.cards[1])
         hand2.add_card(self.deck.draw_card())
 
-        self.table_dict[player].pop(-1)
+        self.table_dict[player].pop()
         self.table_dict[player].append(hand1)
         self.table_dict[player].append(hand2)
-
-        hand1 = self.hit_or_stick(player, hand1)
-        hand2 = self.hit_or_stick(player, hand2)
+        played_hands = self.player_turn(player, [hand1,hand2])
         
-        return hand1, hand2
+        return played_hands
+        
+        
     
     def table_view(self, player):
         '''
@@ -347,7 +346,8 @@ class Table(object):
             while True: # loop operates on player and hand before adding to table 
                 print ('Table shows:')
                 if hand.get_hand_val() == 21 and len(hand.cards) == 2:
-                    print(f"{player} Blackjack!! Winner winner chicken dinner")
+                    print (f'Your hand, {player}, is {hand.show_hand_all()}.')
+                    print("Blackjack!! Winner winner chicken dinner")
                     break
                 self.table_view(player)
                 print (f'Your hand, {player}, is {hand.show_hand_all()}.')
@@ -363,8 +363,9 @@ class Table(object):
                     print (f'{player}, Your hand is {hand.show_hand_all()}. - BUST!\n\n')
                     break
             hand.mark_completed()
+            return hand
+        else: return None
 
-        return hand
         
     #####################
 
@@ -464,11 +465,11 @@ class Table(object):
             hand = Hand(player.get_bet())
 
             if player == 'House':
-                hand.add_card(Card('A','Hearts',11))
+                hand.add_card(Card('Ace','Hearts',11))
                 hand.add_card(Card('9','Clubs',9))
             elif i==0: #dealt to player 1
-                hand.add_card(Card('A','Hearts',11))
-                hand.add_card(Card('J','Clubs',10)) 
+                hand.add_card(Card('Ace','Hearts',11))
+                hand.add_card(Card('Ace','Clubs',11)) 
                 i+=1
             elif i==1: #dealt to player 2
                 hand.add_card(Card('6','Hearts',6))
@@ -511,8 +512,8 @@ class Table(object):
 
             #dealing 2 cards to all seats
             self.deck = Deck() #reshuffle/new deck
-            self.deal_cards()
-            # self.deal_cards_for_testing() ##debugging
+            # self.deal_cards()
+            self.deal_cards_for_testing() ##debugging
 
             #players' turns
             if not self.check_dealer_blackjack():
