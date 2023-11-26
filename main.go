@@ -11,11 +11,11 @@ func main() {
 	fmt.Println("Welcome to BLACKJACK!")
 
 	// setup the table
-	tableSize := 4
-	gameTable := table.NewTable(tableSize)
-	playersList := player.BuildPlayersMap(gameTable.MaxSize)
-	gameTable.Players = playersList
-	fmt.Println(playersList)
+	tableMaxSize := 3
+	gameTable := table.NewTable(tableMaxSize)
+	playerMap := player.BuildPlayersMap(gameTable.MaxSize)
+	gameTable.Players = playerMap
+	fmt.Println(playerMap)
 
 	keepPlaying := true
 	for keepPlaying {

@@ -23,6 +23,10 @@ func NewTable(tableSize int) Table {
 	}
 }
 
+// This runs after each round:
+// - tally wins & losses
+// - remove players with 0 balances
+// continue if any survivors & house still has money
 func (t Table) CheckKeepPlaying(balanceSnapshot map[string]int) bool {
 	var playerList []string
 	// Create a copy of t.Players names to iterate over
@@ -30,8 +34,10 @@ func (t Table) CheckKeepPlaying(balanceSnapshot map[string]int) bool {
 		playerList = append(playerList, playerName)
 	}
 
+	//
 	t.reportResults(playerList, balanceSnapshot)
-	if len(t.Players) > 0 {
+
+	if len(t.Players) > 0 && t.House.Balance > 0 {
 		return true
 	}
 	return false

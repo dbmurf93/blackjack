@@ -18,24 +18,22 @@ type Player struct {
 // add player to the list with a starting balance
 func BuildPlayersMap(tableMaxSize int) map[string]Player {
 	var (
-		players       map[string]Player
+		players       = make(map[string]Player)
 		playerCounter = 1
 	)
 
 	// TODO: Separate out name input to be more unit testable
 	for len(players) < tableMaxSize {
 		playerName := ""
-		fmt.Printf(`
-Enter player %d name
-(A-z, no numbers or special characters allowed)
-:
-`, playerCounter)
+		fmt.Printf("Enter player %d name\n"+
+			"\t(- A-z, no numbers or special characters allowed\n"+
+			"\t - Leave empty to continue with the current players)\n", playerCounter)
 		fmt.Scanln(&playerName)
+		if playerName == "" {
+			fmt.Println("No name provided, let's play!")
+			break
+		}
 		switch {
-		case playerName == "":
-			fmt.Println("No name provided, try again...")
-			time.Sleep(2 * time.Second)
-			continue
 		case strings.ToLower(playerName) == "house":
 			fmt.Println("'House' is not an allowed Name, try again...")
 			time.Sleep(2 * time.Second)
@@ -54,6 +52,10 @@ Enter player %d name
 
 			fmt.Printf("%s was added to the table!\n", playerName)
 			playerCounter++
+			fmt.Println("Current Players:")
+			for playerName := range players {
+				fmt.Printf("\t%s\n", playerName)
+			}
 		}
 	}
 	return players
