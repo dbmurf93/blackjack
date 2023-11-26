@@ -1,7 +1,3 @@
-### Welcome to blackjack, 
-### we do not have a fancy README.md
-### all requests for fancy accoutrements 
-### will be rejected outright, with haste
 
 import random
 max_table_size = 4 #includes House 
