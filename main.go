@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"blackjack/player"
+	"blackjack/players"
 	"blackjack/table"
 	"blackjack/utils"
 )
@@ -15,11 +15,10 @@ func main() {
 
 	// setup the table
 	tableMaxSize := 3
-	gameTable := table.NewTable(tableMaxSize)
 
 	// Get & set players
-	playerMap := player.BuildPlayersMap(gameTable.MaxSize)
-	gameTable.Players = playerMap
+	playerMap := players.BuildPlayersMap(tableMaxSize)
+	gameTable := table.NewTable(playerMap)
 	slog.Info("", "Players: ", playerMap)
 
 	keepPlaying := true

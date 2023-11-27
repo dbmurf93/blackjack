@@ -1,25 +1,26 @@
 package table
 
 import (
-	"blackjack/player"
+	"blackjack/cards"
+	"blackjack/players"
 	"fmt"
 )
 
 type Table struct {
-	MaxSize int
-	Players map[string]player.Player
-	House   player.Player
-	// totalMoneyOnTable int // Worth monitoring this for security?
+	Deck    cards.Deck
+	House   players.Player
+	Players map[string]players.Player
 }
 
 // Set up a new table with the provided size,
-// and a "House" player with a starting balance of 1000
-func NewTable(tableSize int) Table {
+// and a "House" player with a starting balance of (100 * # of players)
+func NewTable(playerMap map[string]players.Player) Table {
 	return Table{
-		MaxSize: tableSize,
-		House: player.Player{
-			Balance: 1000,
+		Deck: cards.NewDeck(),
+		House: players.Player{
+			Balance: 100 * len(playerMap),
 		},
+		Players: playerMap,
 	}
 }
 
@@ -34,7 +35,6 @@ func (t Table) CheckKeepPlaying(balanceSnapshot map[string]int) bool {
 		playerList = append(playerList, playerName)
 	}
 
-	//
 	t.reportResults(playerList, balanceSnapshot)
 
 	if len(t.Players) > 0 && t.House.Balance > 0 {
@@ -52,6 +52,8 @@ func (t Table) GetBalanceSnapshot() map[string]int {
 	return balanceSnap
 }
 
+// Report whether each player won or lost this round
+// & remove players with 0 balance
 func (t Table) reportResults(playerNameList []string, balanceSnapshot map[string]int) {
 	for _, playerName := range playerNameList {
 		player := t.Players[playerName]

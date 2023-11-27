@@ -1,7 +1,8 @@
-package player
+package players
 
 import (
-	"blackjack/card"
+	"blackjack/cards"
+	"blackjack/utils"
 	"fmt"
 	"strings"
 	"time"
@@ -12,19 +13,33 @@ import (
 type Player struct {
 	Bet     int
 	Balance int
-	Hand    []card.Card
-	// TODO: prevent exiting and restarting to get the starting $50??
+	Hands   []cards.Hand // players can have multiple hands per round if there is a split
+}
+
+func (p *Player) CheckSplit(hand cards.Hand) bool {
+	if !hand.IsSplittable() {
+		return false
+	}
+
+	confirmSplit := utils.ProcessYesOrNo(
+		fmt.Sprintf("Do you want to split this hand: [Y/n]\n%v\n", hand))
+
+	if confirmSplit {
+		return true
+	}
+	return false
 }
 
 // Asks for name input, and for valid names,
 // add player to the list with a starting balance
+//
+// TODO: Separate out name input to be more unit testable
 func BuildPlayersMap(tableMaxSize int) map[string]Player {
 	var (
 		players       = make(map[string]Player)
 		playerCounter = 1
 	)
 
-	// TODO: Separate out name input to be more unit testable
 	for len(players) < tableMaxSize {
 		playerName := ""
 		fmt.Printf("Enter player %d name\n"+
