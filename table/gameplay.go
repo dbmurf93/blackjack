@@ -13,6 +13,8 @@ func checkFunds(player players.Player, amount int) {}
 func makeBet(player *players.Player, amount int)   {}
 func (t *Table) loseBet(player *players.Player)    {}
 func (t *Table) winBet(player *players.Player)     {}
+
+// Deal 2 cards to each player to start the game
 func (t *Table) DealAll() {
 	visibility := true       // draw first card face up
 	for i := 0; i < 1; i++ { // deal 2 cards to each player
@@ -21,16 +23,20 @@ func (t *Table) DealAll() {
 			hand.Cards = append(hand.Cards, t.Deck.DrawCard(visibility))
 			player.Hands[0] = hand
 		}
-		visibility = false
+		t.House.Hands[0].Cards = append(t.House.Hands[0].Cards, t.Deck.DrawCard(visibility))
+		visibility = false // draw 2nd card face down
 	}
 }
 
 func (t Table) playerTurn(player *players.Player) {
-	hand := player.Hands[0]
-	if player.CheckSplit(hand) {
-		// if hand split is available & approved by user
-		player.Hands = cards.SplitHand(hand)
+	for i, hand := range player.Hands {
+		if player.CheckSplit(hand) {
+			// if hand split is available & approved by user
+			// Create split hands, and replace relevant hand in player
+			splitHands := cards.SplitHand(hand)
+			player.Hands = append(player.Hands[:i], splitHands...)
 
+		}
 	}
 }
 

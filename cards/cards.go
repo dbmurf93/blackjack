@@ -1,7 +1,6 @@
 package cards
 
 import (
-	"log/slog"
 	"math/rand"
 	"time"
 )
@@ -11,6 +10,13 @@ type Card struct {
 	Suit       string
 	Value      int
 	visibility bool `default:"true"`
+}
+
+func (c Card) DisplayCard(card Card) string {
+	if card.visibility {
+		return card.Name + " of " + card.Suit
+	}
+	return "[]"
 }
 
 type Deck struct {
@@ -55,25 +61,4 @@ func (d Deck) DrawCard(visibility bool) Card {
 	d.drawCounter++
 
 	return drawCard
-}
-
-func DisplayCard(card Card) string {
-	if card.visibility {
-		return card.Name + " of " + card.Suit
-	}
-	return "[]"
-}
-
-// Break out hand into two and return result
-func SplitHand(hand Hand) []Hand {
-	if !hand.IsSplittable() {
-		slog.Error("", "Cannot split this hand", hand)
-	}
-
-	result := []Hand{{
-		Cards: []Card{hand.Cards[0]},
-	}, {
-		Cards: []Card{hand.Cards[1]},
-	}}
-	return result
 }

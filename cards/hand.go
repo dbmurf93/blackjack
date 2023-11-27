@@ -1,5 +1,7 @@
 package cards
 
+import "log/slog"
+
 type Hand struct {
 	Cards     []Card
 	bet       int
@@ -14,6 +16,20 @@ func (h Hand) IsSplittable() bool {
 		return false
 	}
 	return true
+}
+
+// Break out hand into two and return result
+func SplitHand(hand Hand) []Hand {
+	if !hand.IsSplittable() {
+		slog.Error("", "Cannot split this hand", hand)
+	}
+
+	result := []Hand{{
+		Cards: []Card{hand.Cards[0]},
+	}, {
+		Cards: []Card{hand.Cards[1]},
+	}}
+	return result
 }
 
 func addCard()         {}
