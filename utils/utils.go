@@ -2,15 +2,17 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"strings"
 )
 
-// Generic func to check existence of an item in a list
-// Ex:
+// Loops through a list to check existence of provided item
 //
-//	`ok := utils.ExistsInList(player, playerNameList)`
+// Usage:
+//
+//	ok := utils.ExistsInList(player, playerNameList)`
 func ExistsInList[T comparable](item T, listOfT []T) bool {
 	for _, i := range listOfT {
 		if i == item {
@@ -32,12 +34,17 @@ func SetupLogging() {
 	slog.SetDefault(logger)
 }
 
+// Reports to both stdout and logfile and then exits when err != nil
+//
+// TODO: reduce duplication in the future or parameterize this func
 func HandleErr(msg string, err error) {
 	if err != nil {
 		slog.Error(msg, err)
+		log.Fatal(msg, err)
 	}
 }
 
+// Loops prompting user with question until a Y/n response is given
 func ProcessYesOrNo(question string) bool {
 	ans := ""
 	fmt.Println(question)
