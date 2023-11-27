@@ -1,6 +1,7 @@
 package player
 
 import (
+	"blackjack/card"
 	"fmt"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 type Player struct {
 	Bet     int
 	Balance int
+	Hand    []card.Card
 	// TODO: prevent exiting and restarting to get the starting $50??
 }
 
