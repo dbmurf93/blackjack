@@ -49,8 +49,7 @@ func HandleErr(msg string, err error) {
 // TODO +clean input, chan w/ ctx?
 func PromptYesOrNo(question string) bool {
 	ans := ""
-	fmt.Println(question)
-	fmt.Scanln(&ans)
+	PromptUserForInput(question, &ans)
 	switch strings.ToLower(ans) {
 	case "y", "yes":
 		return true
@@ -60,4 +59,16 @@ func PromptYesOrNo(question string) bool {
 		fmt.Printf("Invalid input: %q\nyes or no answers only\n", ans)
 		return PromptYesOrNo(question)
 	}
+}
+
+func PromptUserForInput[T any](question string, target *T) error {
+	_, err := fmt.Println(question)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Scanln(target)
+	if err != nil {
+		return err
+	}
+	return nil
 }

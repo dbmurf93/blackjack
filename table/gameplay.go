@@ -147,6 +147,10 @@ func (t *Table) scoreTable() {
 
 // Recursive func for player to hit, stick, or split on dealt hand
 func (t Table) playerTurn(player *players.Player) error {
+	var err error
+	for err != nil {
+		err = player.PromptForBet()
+	}
 	for handIndex, hand := range player.Hands {
 		if hand.IsCompleted() {
 			continue

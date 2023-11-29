@@ -35,19 +35,21 @@ func (p *Player) CheckSplit(hand cards.Hand) bool {
 	return false
 }
 
+// Set player bet from user input
+//
+// TODO: clean this input better
 func (p *Player) PromptForBet() error {
 	var bet int
 
-	fmt.Println("Enter a valid bet:")
-
-	switch _, err := fmt.Scanln(&bet); {
+	err := utils.PromptUserForInput("Enter a valid bet:", &bet)
+	switch {
 	case err != nil:
 		return err
 	case bet == 0:
-		return errors.New("Invalid input")
+		return errors.New("Bet must be non-zero")
 	}
 	if !p.hasEnoughFunds(bet) {
-		return errors.New("Not Enough funds")
+		return errors.New(fmt.Sprintf("Not Enough funds. You only have %d", p.Balance))
 	}
 	p.Bet = bet
 	return nil
