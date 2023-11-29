@@ -10,11 +10,18 @@ import (
 	"slices"
 )
 
-func getBetFromUser(ctx context.Context)           {}
-func checkFunds(player players.Player, amount int) {}
-func makeBet(player *players.Player, amount int)   {}
-func (t *Table) loseBet(player *players.Player)    {}
-func (t *Table) winBet(player *players.Player)     {}
+func getBetFromUser(ctx context.Context)                {}
+func checkFunds(player players.Player, amount int) bool { return false }
+
+func makeBet(player *players.Player, amount int) {
+	player.Bet = amount
+}
+func (t *Table) loseBet(player *players.Player) {
+	player.Balance -= player.Bet
+}
+func (t *Table) winBet(player *players.Player) {
+	player.Balance += player.Bet
+}
 
 func (t *Table) ResetRound() {
 	for _, player := range t.Players {
@@ -33,12 +40,57 @@ func (t *Table) dealRoundStart() {
 			hand.AddCard(t.Deck.DrawCard(visibility))
 			player.Hands[0] = hand
 		}
-		t.House.Hands[0].Cards = append(t.House.Hands[0].Cards, t.Deck.DrawCard(visibility))
+		t.House.Dealer.Hands[0].Cards = append(t.House.Dealer.Hands[0].Cards, t.Deck.DrawCard(visibility))
 		visibility = false // draw 2nd card face down
 	}
 }
 
-func (t Table) playerTurn(player *players.Player) {
+func (t *Table) dealerTurn() {
+	house := t.House
+	dealerHand := house.Dealer.Hands[0]
+	dealerHandValue := func() int { return dealerHand.GetTotalValue() }
+
+	if dealerHandValue() == 21 {
+		house.blackjack = true
+		fmt.Println("Dealer has blackjack, too bad!")
+	}
+
+	// Dealer hits for anything under 17
+	for dealerHandValue() < 17 {
+		dealerHand.AddCard(t.Deck.DrawCard(true))
+		if dealerHandValue() >= 21 {
+			break
+		}
+	}
+
+	fmt.Printf("Dealer finishes at %d\n", dealerHandValue())
+}
+
+func (t *Table) CheckScores() {
+	houseScore := t.House.Dealer.Hands[0].GetTotalValue()
+	switch {
+	case houseScore > 21:
+		// Everyone wins
+	case t.House.blackjack:
+		// No one wins
+	}
+
+	for _, player := range t.Players {
+		for _, hand := range player.Hands {
+			playerScore := hand.GetTotalValue()
+			switch {
+			case houseScore > playerScore:
+				// house wins
+			case houseScore < playerScore:
+				// player wins
+			case houseScore == playerScore:
+				// no one wins
+			}
+		}
+	}
+}
+
+func (t Table) playerTurn(player *players.Player) error {
 	for handIndex, hand := range player.Hands {
 		if hand.IsCompleted() {
 			continue
@@ -53,21 +105,25 @@ func (t Table) playerTurn(player *players.Player) {
 			player.Hands = slices.Replace(player.Hands, handIndex, handIndex, splitHands...)
 
 			// play remaining hands & end turn
-			t.playerTurn(player)
-			break
+			return t.playerTurn(player)
 		}
-		t.hitOrStick(player, hand)
+
+		t.hitOrStick(player, &hand)
+
+		// update player hand
+		player.Hands[handIndex] = hand
 	}
+	return nil
 }
 
-func (t Table) hitOrStick(player *players.Player, hand cards.Hand) {
+// Prompt user for hit and draw accordingly until a "no" response or bust
+func (t Table) hitOrStick(player *players.Player, hand *cards.Hand) {
 	var (
 		done, hit bool
 	)
 
-	handValue := hand.GetTotalValue()
-
 	for !done {
+		handValue := hand.GetTotalValue()
 		hit = utils.PromptYesOrNo(
 			fmt.Sprintf(
 				"Your hand is: [Y/n]\n"+
@@ -75,16 +131,19 @@ func (t Table) hitOrStick(player *players.Player, hand cards.Hand) {
 					"Would you like to hit?", hand, handValue))
 		if hit {
 			hand.AddCard(t.Deck.DrawCard(true))
-			if hand.GetTotalValue() > 21 {
-				fmt.Sprintln(fmt.Sprintf("Oof, %d means you bust", hand.GetTotalValue()))
+			if bust := hand.CheckBust(); bust {
 				break
 			}
+			continue
 		}
 		fmt.Sprintln(fmt.Sprintf("%s has chosen to stick at %d", player.Name, hand.GetTotalValue()))
 		done = true
 	}
+
+	hand.MarkCompleted()
 }
 
+// ee
 func splitHint(hand cards.Hand) {
 	if !hand.IsSplittable() {
 		slog.Warn("", "Cannot split this hand", hand)

@@ -11,8 +11,8 @@ import (
 
 // Represents a player with a name, balance, and current bet,
 type Player struct {
-	Bet     int
 	Balance int
+	Bet     int
 	Hands   []cards.Hand // players can have multiple hands per round if there is a split
 	Name    string
 }
