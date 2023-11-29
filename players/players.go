@@ -3,6 +3,7 @@ package players
 import (
 	"blackjack/cards"
 	"blackjack/utils"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -32,6 +33,28 @@ func (p *Player) CheckSplit(hand cards.Hand) bool {
 		return true
 	}
 	return false
+}
+
+func (p *Player) PromptForBet() error {
+	var bet int
+
+	fmt.Println("Enter a valid bet:")
+
+	switch _, err := fmt.Scanln(&bet); {
+	case err != nil:
+		return err
+	case bet == 0:
+		return errors.New("Invalid input")
+	}
+	if !p.hasEnoughFunds(bet) {
+		return errors.New("Not Enough funds")
+	}
+	p.Bet = bet
+	return nil
+}
+
+func (p Player) hasEnoughFunds(amount int) bool {
+	return p.Balance >= amount
 }
 
 // Asks for name input, and for valid names,
