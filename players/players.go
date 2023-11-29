@@ -14,15 +14,19 @@ type Player struct {
 	Bet     int
 	Balance int
 	Hands   []cards.Hand // players can have multiple hands per round if there is a split
+	Name    string
 }
 
+// Check if hand split is available & prompt user for Y/n
+//   - limit 4 total hands
 func (p *Player) CheckSplit(hand cards.Hand) bool {
-	if !hand.IsSplittable() {
+	if !hand.IsSplittable() ||
+		len(p.Hands) >= 4 {
 		return false
 	}
 
-	confirmSplit := utils.ProcessYesOrNo(
-		fmt.Sprintf("Do you want to split this hand: [Y/n]\n%v\n", hand))
+	confirmSplit := utils.PromptYesOrNo(
+		fmt.Sprintf("Do you want to split this hand: [Y/n]\n%v", hand))
 
 	if confirmSplit {
 		return true
@@ -65,7 +69,8 @@ func BuildPlayersMap(tableMaxSize int) map[string]Player {
 				time.Sleep(2 * time.Second)
 				continue
 			}
-			players[playerName] = Player{Balance: 100}
+			// add player with starting balance
+			players[playerName] = Player{Balance: 100, Name: playerName}
 
 			fmt.Printf("%s was added to the table!\n", playerName)
 			playerCounter++

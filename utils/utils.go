@@ -45,6 +45,8 @@ func HandleErr(msg string, err error) {
 }
 
 // Loops prompting user with question until a Y/n response is given
+//
+// TODO +clean input, chan w/ ctx?
 func ProcessYesOrNo(question string) bool {
 	ans := ""
 	fmt.Println(question)

@@ -25,6 +25,7 @@ func main() {
 	for keepPlaying {
 		// Capture current state before playing a round
 		balanceSnapshot := gameTable.GetBalanceSnapshot()
+		gameTable.ResetRound()
 
 		// play a round of blackjack
 		// TODO

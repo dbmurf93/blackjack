@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 )
 
 func getBetFromUser(ctx context.Context)           {}
@@ -14,13 +15,21 @@ func makeBet(player *players.Player, amount int)   {}
 func (t *Table) loseBet(player *players.Player)    {}
 func (t *Table) winBet(player *players.Player)     {}
 
+func (t *Table) ResetRound() {
+	for _, player := range t.Players {
+		// empty all hands
+		player.Hands = []cards.Hand{}
+	}
+	t.dealRoundStart()
+}
+
 // Deal 2 cards to each player to start the game
-func (t *Table) DealAll() {
+func (t *Table) dealRoundStart() {
 	visibility := true       // draw first card face up
 	for i := 0; i < 1; i++ { // deal 2 cards to each player
 		for _, player := range t.Players {
 			hand := player.Hands[0]
-			hand.Cards = append(hand.Cards, t.Deck.DrawCard(visibility))
+			hand.AddCard(t.Deck.DrawCard(visibility))
 			player.Hands[0] = hand
 		}
 		t.House.Hands[0].Cards = append(t.House.Hands[0].Cards, t.Deck.DrawCard(visibility))
@@ -29,16 +38,25 @@ func (t *Table) DealAll() {
 }
 
 func (t Table) playerTurn(player *players.Player) {
-	for i, hand := range player.Hands {
+	// func (t Table) playerTurn(player *players.Player) {
+	for i := 0; i < len(player.Hands); i++ {
+		hand := player.Hands[i]
 		if player.CheckSplit(hand) {
-			// if hand split is available & approved by user
-			// Create split hands, and replace relevant hand in player
 			splitHands := cards.SplitHand(hand)
-			player.Hands = append(player.Hands[:i], splitHands...)
-
+			for _, splitHand := range splitHands {
+				// Draw one card for each
+				splitHand.Cards = append(splitHand.Cards, t.Deck.DrawCard(true))
+			}
+			// Replace this hand in player
+			player.Hands = slices.Replace(player.Hands, i, i, splitHands...)
+			i-- // Replay this index
+			continue
 		}
+
 	}
 }
+
+func (t Table) hitOrStick(player *players.Player) {}
 
 func splitHint(hand cards.Hand) {
 	if !hand.IsSplittable() {
