@@ -23,15 +23,11 @@ func main() {
 
 	keepPlaying := true
 	for keepPlaying {
-		// Capture current state before playing a round
-		balanceSnapshot := gameTable.GetBalanceSnapshot()
-		gameTable.ResetRound()
+		// Play a round of blackjack
+		gameTable.PlayRound()
 
-		// play a round of blackjack
-		// gameTable.PlayRound()
-
-		// Update player balances and see if they want to keep playing
-		keepPlaying = gameTable.CheckKeepPlaying(balanceSnapshot)
+		// Prompt players with money if they want to keep playing
+		keepPlaying = gameTable.CheckKeepPlaying()
 	}
 	fmt.Println("Thanks for playing")
 }

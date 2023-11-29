@@ -4,28 +4,51 @@ import (
 	"blackjack/cards"
 	"blackjack/players"
 	"blackjack/utils"
-	"context"
 	"fmt"
 	"log/slog"
 	"slices"
 )
 
-func getBetFromUser(ctx context.Context)                {}
-func checkFunds(player players.Player, amount int) bool { return false }
+func (t *Table) PlayRound() {
+	t.Deck.Shuffle()
 
-func makeBet(player *players.Player, amount int) {
-	player.Bet = amount
-}
-func (t *Table) loseBet(player *players.Player) {
-	player.Balance -= player.Bet
-}
-func (t *Table) winBet(player *players.Player) {
-	player.Balance += player.Bet
-}
+	t.reset()
 
-func (t *Table) ResetRound() {
+	balanceSnap := t.takeBalanceSnapshot()
+
 	for _, player := range t.Players {
-		// empty all hands
+		player := player
+		t.playerTurn(&player)
+	}
+
+	t.dealerTurn()
+
+	t.scoreTable()
+
+	t.reportResults(balanceSnap)
+
+}
+
+// Returns whether any players would like to continue
+// && dealer still has money
+func (t Table) CheckKeepPlaying() bool {
+	// Create a copy of t.Players names to iterate over
+	var playerNameList []string
+	for playerName := range t.Players {
+		playerNameList = append(playerNameList, playerName)
+	}
+	for _, playerName := range playerNameList {
+		t.promptToKeepPlaying(t.Players[playerName])
+	}
+	if len(t.Players) > 0 && t.House.Dealer.Balance > 0 {
+		return true
+	}
+	return false
+}
+
+// empty all hands & deal round start
+func (t *Table) reset() {
+	for _, player := range t.Players {
 		player.Hands = []cards.Hand{}
 	}
 	t.dealRoundStart()
@@ -66,30 +89,63 @@ func (t *Table) dealerTurn() {
 	fmt.Printf("Dealer finishes at %d\n", dealerHandValue())
 }
 
-func (t *Table) CheckScores() {
-	houseScore := t.House.Dealer.Hands[0].GetTotalValue()
-	switch {
-	case houseScore > 21:
-		// Everyone wins
-	case t.House.blackjack:
-		// No one wins
+// Report whether each player won or lost this round
+// & remove players with 0 balance
+func (t Table) reportResults(balanceSnapshot map[string]int) {
+	for _, player := range t.Players {
+		playerRefBalance := balanceSnapshot[player.Name]
+
+		switch winAmt := player.Balance - playerRefBalance; {
+		case winAmt > 0:
+			fmt.Printf("%s Won %d this round!\nNew balance: %d", player.Name, winAmt, player.Balance)
+
+		case winAmt < 0:
+			if player.Balance == 0 {
+				fmt.Printf("%s Lost everything this round!\n", player.Name)
+				break
+			}
+			fmt.Printf("%s Lost %d this round!\nNew balance: %d", player.Name, winAmt, player.Balance)
+
+		case winAmt == 0:
+			fmt.Printf("%s Broke Even. Solid.\nBalance: %d", player.Name, player.Balance)
+		}
 	}
+}
+
+// Update Player balances with win/loss/wash for each of their hands based on the dealer's final score
+func (t *Table) scoreTable() {
+	houseHand := t.House.Dealer.Hands[0]
+	houseScore := houseHand.GetTotalValue()
 
 	for _, player := range t.Players {
-		for _, hand := range player.Hands {
-			playerScore := hand.GetTotalValue()
-			switch {
+		for _, playerHand := range player.Hands {
+			if houseHand.IsBlackjack() {
+				// automatic loss for everyone unless blackjack
+				if !playerHand.IsBlackjack() {
+					t.loseBet(&player)
+					continue
+				}
+			}
+
+			switch playerScore := playerHand.GetTotalValue(); {
+			case playerScore > 21:
+				// if player bust
+				t.loseBet(&player)
+			case houseScore > 21, houseScore < playerScore:
+				// if house bust or player wins
+				t.winBet(&player)
 			case houseScore > playerScore:
-				// house wins
-			case houseScore < playerScore:
-				// player wins
+				// if house beats player
+				t.loseBet(&player)
 			case houseScore == playerScore:
-				// no one wins
+				// if no one wins
+				// do nothing
 			}
 		}
 	}
 }
 
+// Recursive func for player to hit, stick, or split on dealt hand
 func (t Table) playerTurn(player *players.Player) error {
 	for handIndex, hand := range player.Hands {
 		if hand.IsCompleted() {

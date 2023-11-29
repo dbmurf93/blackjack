@@ -61,3 +61,8 @@ func PromptYesOrNo(question string) bool {
 		return PromptYesOrNo(question)
 	}
 }
+
+// func PromptForBet(player *players.Player) {
+// 	var err error
+// 	err = fmt.Scanf()
+// }

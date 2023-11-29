@@ -12,9 +12,9 @@ type Card struct {
 	visibility bool `default:"true"`
 }
 
-func (c Card) DisplayCard(card Card) string {
-	if card.visibility {
-		return card.Name + " of " + card.Suit
+func (c Card) Show() string {
+	if c.visibility {
+		return c.Name + " of " + c.Suit
 	}
 	return "[]"
 }
@@ -42,8 +42,8 @@ func NewDeck() Deck {
 	return newDeck
 }
 
-// Shuffle cards and
-func (d Deck) Shuffle() {
+// Shuffle cards and reset drawCounter
+func (d *Deck) Shuffle() {
 	// TODO consider using crypto/rand for source?
 	// could hide the extra processing time with an animation
 	rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -51,7 +51,7 @@ func (d Deck) Shuffle() {
 	d.drawCounter = 0
 }
 
-func (d Deck) DrawCard(visibility bool) Card {
+func (d *Deck) DrawCard(visibility bool) Card {
 	if d.drawCounter > len(d.cards)-1 {
 		d.Shuffle()
 	}
