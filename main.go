@@ -28,7 +28,7 @@ func main() {
 		gameTable.ResetRound()
 
 		// play a round of blackjack
-		// TODO
+		// gameTable.PlayRound()
 
 		// Update player balances and see if they want to keep playing
 		keepPlaying = gameTable.CheckKeepPlaying(balanceSnapshot)

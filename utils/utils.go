@@ -47,7 +47,7 @@ func HandleErr(msg string, err error) {
 // Loops prompting user with question until a Y/n response is given
 //
 // TODO +clean input, chan w/ ctx?
-func ProcessYesOrNo(question string) bool {
+func PromptYesOrNo(question string) bool {
 	ans := ""
 	fmt.Println(question)
 	fmt.Scanln(&ans)
@@ -58,6 +58,6 @@ func ProcessYesOrNo(question string) bool {
 		return false
 	default:
 		fmt.Printf("Invalid input: %q\nyes or no answers only\n", ans)
-		return ProcessYesOrNo(question)
+		return PromptYesOrNo(question)
 	}
 }

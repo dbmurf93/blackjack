@@ -3,6 +3,7 @@ package table
 import (
 	"blackjack/cards"
 	"blackjack/players"
+	"blackjack/utils"
 	"context"
 	"fmt"
 	"log/slog"
@@ -38,9 +39,10 @@ func (t *Table) dealRoundStart() {
 }
 
 func (t Table) playerTurn(player *players.Player) {
-	// func (t Table) playerTurn(player *players.Player) {
-	for i := 0; i < len(player.Hands); i++ {
-		hand := player.Hands[i]
+	for handIndex, hand := range player.Hands {
+		if hand.IsCompleted() {
+			continue
+		}
 		if player.CheckSplit(hand) {
 			splitHands := cards.SplitHand(hand)
 			for _, splitHand := range splitHands {
@@ -48,15 +50,40 @@ func (t Table) playerTurn(player *players.Player) {
 				splitHand.Cards = append(splitHand.Cards, t.Deck.DrawCard(true))
 			}
 			// Replace this hand in player
-			player.Hands = slices.Replace(player.Hands, i, i, splitHands...)
-			i-- // Replay this index
-			continue
-		}
+			player.Hands = slices.Replace(player.Hands, handIndex, handIndex, splitHands...)
 
+			// play remaining hands & end turn
+			t.playerTurn(player)
+			break
+		}
+		t.hitOrStick(player, hand)
 	}
 }
 
-func (t Table) hitOrStick(player *players.Player) {}
+func (t Table) hitOrStick(player *players.Player, hand cards.Hand) {
+	var (
+		done, hit bool
+	)
+
+	handValue := hand.GetTotalValue()
+
+	for !done {
+		hit = utils.PromptYesOrNo(
+			fmt.Sprintf(
+				"Your hand is: [Y/n]\n"+
+					"%v - Value: %d\n"+
+					"Would you like to hit?", hand, handValue))
+		if hit {
+			hand.AddCard(t.Deck.DrawCard(true))
+			if hand.GetTotalValue() > 21 {
+				fmt.Sprintln(fmt.Sprintf("Oof, %d means you bust", hand.GetTotalValue()))
+				break
+			}
+		}
+		fmt.Sprintln(fmt.Sprintf("%s has chosen to stick at %d", player.Name, hand.GetTotalValue()))
+		done = true
+	}
+}
 
 func splitHint(hand cards.Hand) {
 	if !hand.IsSplittable() {

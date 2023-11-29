@@ -1,6 +1,7 @@
 package cards
 
 import (
+	"fmt"
 	"log/slog"
 )
 
@@ -8,6 +9,7 @@ type Hand struct {
 	Cards []Card
 	Bet   int
 
+	bust       bool `default:"false"`
 	completed  bool `default:"false"`
 	totalValue *int
 }
@@ -47,6 +49,16 @@ func SplitHand(hand Hand) []Hand {
 	return result
 }
 
+// Checks totalValue not > 21
+func (h *Hand) CheckBust() bool {
+	if h.GetTotalValue() > 21 {
+		fmt.Sprintln(fmt.Sprintf("Oof, %d means bust!", h.GetTotalValue()))
+		h.bust = true
+		return true
+	}
+	return false
+}
+
 func (h *Hand) GetTotalValue() int {
 	if h.totalValue != nil {
 		return *h.totalValue
@@ -76,6 +88,8 @@ func (h *Hand) CalculateTotalValue() int {
 
 	// cache & return result
 	h.totalValue = &totalValue
+	h.CheckBust()
+
 	return totalValue
 }
 
