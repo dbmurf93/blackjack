@@ -41,7 +41,6 @@ func (h *Hand) CalculateTotalValue() int {
 func (h *Hand) CheckBust() bool {
 	if h.GetTotalValue() > 21 {
 		fmt.Sprintln(fmt.Sprintf("Oof, %d means bust!", h.GetTotalValue()))
-		h.bust = true
 		return true
 	}
 	return false

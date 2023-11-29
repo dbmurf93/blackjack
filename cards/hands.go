@@ -5,10 +5,9 @@ import (
 )
 
 type Hand struct {
-	Cards []Card
 	Bet   int
+	Cards []Card
 
-	bust       bool `default:"false"`
 	completed  bool `default:"false"`
 	totalValue *int
 }
