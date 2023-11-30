@@ -24,7 +24,9 @@ func ExistsInList[T comparable](item T, listOfT []T) bool {
 
 func SetupLogging() {
 	logfile, err := os.Create("blackjack.log")
-	HandleErr("error creating logfile", err)
+	if err != nil {
+		log.Fatal("error creating logfile", err)
+	}
 	defer logfile.Close()
 
 	opts := slog.HandlerOptions{
@@ -37,10 +39,9 @@ func SetupLogging() {
 // Reports to both stdout and logfile and then exits when err != nil
 //
 // TODO: reduce duplication in the future or parameterize this func
-func HandleErr(msg string, err error) {
+func LogErr(msg string, err error) {
 	if err != nil {
 		slog.Error(msg, err)
-		log.Fatal(msg, err)
 	}
 }
 

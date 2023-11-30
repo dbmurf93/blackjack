@@ -24,11 +24,6 @@ func (h *Hand) IsCompleted() bool {
 	return h.completed
 }
 
-// True if a 2-card hand adds up to 21
-func (h Hand) IsBlackjack() bool {
-	return len(h.Cards) == 2 && h.GetTotalValue() == 21
-}
-
 // Checks that hand length is 2 & for a pair
 func (h Hand) IsSplittable() bool {
 	if len(h.Cards) != 2 ||
@@ -36,6 +31,26 @@ func (h Hand) IsSplittable() bool {
 		return false
 	}
 	return true
+}
+
+// Print all cards in hand independent of visibility
+func (h Hand) Show() string {
+	handPrint := "( "
+	for _, card := range h.Cards {
+		handPrint += card.show() + " "
+	}
+	handPrint += ")"
+	return handPrint
+}
+
+// Print all cards in hand depending on visibility
+func (h Hand) Glance() string {
+	handPrint := "( "
+	for _, card := range h.Cards {
+		handPrint += card.glance() + " "
+	}
+	handPrint += ")"
+	return handPrint
 }
 
 // Break out hand into two and return result
@@ -51,7 +66,3 @@ func SplitHand(hand Hand) []Hand {
 	}}
 	return result
 }
-
-func getBet()          {}
-func showHandAll()     {}
-func showHandPartial() {}

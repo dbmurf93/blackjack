@@ -15,12 +15,12 @@ type House struct {
 type Table struct {
 	Deck    cards.Deck
 	House   House
-	Players map[string]players.Player
+	Players map[string]*players.Player
 }
 
 // Set up a new table with the provided size,
 // and a "House" player with a starting balance of (100 * # of players)
-func NewTable(playerMap map[string]players.Player) Table {
+func NewTable(playerMap map[string]*players.Player) Table {
 	return Table{
 		Deck: cards.NewDeck(),
 		House: House{
@@ -45,7 +45,7 @@ func (t Table) takeBalanceSnapshot() map[string]int {
 
 // Prompt user if they have money left
 // Delete from Table if user doesn't opt in or is out of money
-func (t *Table) promptToKeepPlaying(player players.Player) {
+func (t *Table) promptToKeepPlaying(player *players.Player) {
 	keepPlaying := false
 
 	if player.Balance > 0 {

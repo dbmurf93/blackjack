@@ -3,7 +3,6 @@ package players
 import (
 	"blackjack/cards"
 	"blackjack/utils"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -35,49 +34,30 @@ func (p *Player) CheckSplit(hand cards.Hand) bool {
 	return false
 }
 
-// Set player bet from user input
-//
-// TODO: clean this input better
-func (p *Player) PromptForBet() error {
-	var bet int
-
-	err := utils.PromptUserForInput("Enter a valid bet:", &bet)
-	switch {
-	case err != nil:
-		return err
-	case bet == 0:
-		return errors.New("Bet must be non-zero")
-	}
-	if !p.hasEnoughFunds(bet) {
-		return errors.New(fmt.Sprintf("Not Enough funds. You only have %d", p.Balance))
-	}
-	p.Bet = bet
-	return nil
-}
-
-func (p Player) hasEnoughFunds(amount int) bool {
-	return p.Balance >= amount
-}
-
 // Asks for name input, and for valid names,
 // add player to the list with a starting balance
 //
 // TODO: Separate out name input to be more unit testable
-func BuildPlayersMap(tableMaxSize int) map[string]Player {
+func BuildPlayersMap(tableMaxSize int) map[string]*Player {
 	var (
-		players       = make(map[string]Player)
+		players       = make(map[string]*Player)
 		playerCounter = 1
 	)
 
 	for len(players) < tableMaxSize {
 		playerName := ""
-		fmt.Printf("Enter player %d name\n"+
+		namePrompt := fmt.Sprintf("Enter player %d name\n"+
 			"\t(- A-z, no numbers or special characters allowed\n"+
 			"\t - Leave empty to continue with the current players)\n", playerCounter)
-		fmt.Scanln(&playerName)
+		err := utils.PromptUserForInput(namePrompt, &playerName)
+		utils.LogErr("error setting user name", err)
 		if playerName == "" {
-			fmt.Println("No name provided, let's play!")
-			break
+			fmt.Println("No name provided")
+			if playerCounter > 1 {
+				fmt.Println("let's play!")
+				break
+			}
+			continue
 		}
 		switch {
 		case strings.ToLower(playerName) == "house":
@@ -95,7 +75,7 @@ func BuildPlayersMap(tableMaxSize int) map[string]Player {
 				continue
 			}
 			// add player with starting balance
-			players[playerName] = Player{Balance: 100, Name: playerName}
+			players[playerName] = &Player{Balance: 100, Name: playerName}
 
 			fmt.Printf("%s was added to the table!\n", playerName)
 			playerCounter++

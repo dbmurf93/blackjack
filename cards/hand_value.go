@@ -1,7 +1,5 @@
 package cards
 
-import "fmt"
-
 // Retrieves or calculates cached total value
 func (h *Hand) GetTotalValue() int {
 	if h.totalValue != nil {
@@ -40,8 +38,12 @@ func (h *Hand) CalculateTotalValue() int {
 // Checks totalValue not > 21
 func (h *Hand) CheckBust() bool {
 	if h.GetTotalValue() > 21 {
-		fmt.Sprintln(fmt.Sprintf("Oof, %d means bust!", h.GetTotalValue()))
 		return true
 	}
 	return false
+}
+
+// True if a 2-card hand adds up to 21
+func (h Hand) IsBlackjack() bool {
+	return len(h.Cards) == 2 && h.GetTotalValue() == 21
 }

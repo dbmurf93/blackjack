@@ -12,11 +12,17 @@ type Card struct {
 	visibility bool `default:"true"`
 }
 
-func (c Card) Show() string {
+// visibility dependent show()
+func (c Card) glance() string {
 	if c.visibility {
-		return c.Name + " of " + c.Suit
+		return c.Name + c.Suit
 	}
 	return "[]"
+}
+
+// visibility independent show()
+func (c Card) show() string {
+	return c.Name + c.Suit
 }
 
 type Deck struct {
@@ -28,7 +34,9 @@ func NewDeck() Deck {
 	cardNames := []string{"2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"}
 	cardValues := []int{2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11}
 	suits := []string{"Hearts", "Diamonds", "Clubs", "Spades"}
-	newDeck := Deck{}
+	newDeck := Deck{
+		cards: make([]Card, 0, 52),
+	}
 	for _, suit := range suits {
 		for i, name := range cardNames {
 			newDeck.cards = append(newDeck.cards, Card{
