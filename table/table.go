@@ -31,16 +31,21 @@ func NewTable(playerMap map[string]*players.Player) Table {
 	}
 }
 
-// Capture status of all players & house balance
-func (t Table) takeBalanceSnapshot() map[string]int {
-	balanceSnap := map[string]int{}
-
-	for playerName, player := range t.Players {
-		balanceSnap[playerName] = player.Balance
+// Returns whether any players would like to continue
+// && dealer still has money
+func (t *Table) CheckKeepPlaying() bool {
+	var playerNameList []string
+	// Create a copy of t.Players names to iterate over
+	for playerName := range t.Players {
+		playerNameList = append(playerNameList, playerName)
 	}
-	balanceSnap["House"] = t.House.Dealer.Balance
-
-	return balanceSnap
+	for _, playerName := range playerNameList {
+		t.promptToKeepPlaying(t.Players[playerName])
+	}
+	if len(t.Players) > 0 {
+		return true
+	}
+	return false
 }
 
 // Prompt user if they have money left
@@ -49,7 +54,7 @@ func (t *Table) promptToKeepPlaying(player *players.Player) {
 	keepPlaying := false
 
 	if player.Balance > 0 {
-		keepPlaying = utils.PromptYesOrNo("Would you like to keep playing? [Y/n]\n")
+		keepPlaying = utils.PromptYesOrNo(player.Name + " - " + "Would you like to keep playing? [Y/n]\n")
 	}
 
 	if !keepPlaying {

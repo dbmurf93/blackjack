@@ -34,23 +34,6 @@ func (t *Table) PlayRound() {
 
 }
 
-// Returns whether any players would like to continue
-// && dealer still has money
-func (t Table) CheckKeepPlaying() bool {
-	// Create a copy of t.Players names to iterate over
-	var playerNameList []string
-	for playerName := range t.Players {
-		playerNameList = append(playerNameList, playerName)
-	}
-	for _, playerName := range playerNameList {
-		t.promptToKeepPlaying(t.Players[playerName])
-	}
-	if len(t.Players) > 0 {
-		return true
-	}
-	return false
-}
-
 // empty all hands & deal round start
 func (t *Table) reset() {
 	for _, player := range t.Players {
@@ -69,6 +52,18 @@ func (t *Table) reset() {
 	t.dealRoundStart()
 }
 
+// Capture status of all players & house balance
+func (t Table) takeBalanceSnapshot() map[string]int {
+	balanceSnap := map[string]int{}
+
+	for playerName, player := range t.Players {
+		balanceSnap[playerName] = player.Balance
+	}
+	balanceSnap["House"] = t.House.Dealer.Balance
+
+	return balanceSnap
+}
+
 // Deal 2 cards to each player to start the game
 func (t *Table) dealRoundStart() {
 	var hand *cards.Hand
@@ -83,9 +78,77 @@ func (t *Table) dealRoundStart() {
 	}
 }
 
+// Recursive func for player to hit, stick, or split on dealt hand
+func (t *Table) playerTurn(player *players.Player) error {
+	for handIndex, hand := range player.Hands {
+		if hand.IsCompleted() {
+			continue
+		}
+		if player.CheckSplit(hand) {
+			splitHands := cards.SplitHand(hand)
+			for _, splitHand := range splitHands {
+				// Draw one card for each
+				splitHand.Cards = append(splitHand.Cards, t.Deck.DrawCard(true))
+			}
+			// Replace this hand in player
+			player.Hands = slices.Replace(player.Hands, handIndex, handIndex, splitHands...)
+
+			// play remaining hands & end turn
+			return t.playerTurn(player)
+		}
+
+		t.hitOrStick(player, &hand)
+
+		// update player hand
+		player.Hands[handIndex] = hand
+	}
+	return nil
+}
+
+// Prompt user for hit and draw accordingly until a "no" response or bust
+func (t *Table) hitOrStick(player *players.Player, hand *cards.Hand) {
+	var (
+		done, hit bool
+	)
+
+	for !done {
+		if hand.IsBlackjack() {
+			fmt.Println("Winner Winner!!")
+			break
+		}
+
+		handValue := hand.GetTotalValue()
+		hitMsg := fmt.Sprintf(
+			"%s - Your hand is: [Y/n]\n"+
+				"%v - Value: %d\n"+
+				"Would you like to hit?", player.Name, hand.Show(), handValue)
+
+		hit = utils.PromptYesOrNo(hitMsg)
+
+		if hit {
+			hand.AddCard(t.Deck.DrawCard(true))
+			switch handValue = hand.GetTotalValue(); {
+			case handValue > 21:
+				fmt.Println(fmt.Sprintf("Oof, %d means bust!", handValue))
+				done = true
+				break
+			case handValue == 21:
+				fmt.Println("Nice! You got 21")
+				done = true
+				break
+			}
+			continue
+		}
+		fmt.Sprintln(fmt.Sprintf("%s has chosen to stick at %d", player.Name, handValue))
+		done = true
+	}
+
+	hand.MarkCompleted()
+}
+
 func (t *Table) dealerTurn() {
 	house := t.House
-	dealerHand := house.Dealer.Hands[0]
+	dealerHand := &house.Dealer.Hands[0]
 	dealerHandValue := func() int { return dealerHand.GetTotalValue() }
 
 	if dealerHandValue() == 21 {
@@ -102,29 +165,6 @@ func (t *Table) dealerTurn() {
 	}
 
 	fmt.Printf("Dealer finishes at %d\n", dealerHandValue())
-}
-
-// Report whether each player won or lost this round
-// & remove players with 0 balance
-func (t Table) reportResults(balanceSnapshot map[string]int) {
-	for _, player := range t.Players {
-		playerRefBalance := balanceSnapshot[player.Name]
-
-		switch winAmt := player.Balance - playerRefBalance; {
-		case winAmt > 0:
-			fmt.Printf("%s Won %d this round!\nNew balance: %d", player.Name, winAmt, player.Balance)
-
-		case winAmt < 0:
-			if player.Balance == 0 {
-				fmt.Printf("%s Lost everything this round!\n", player.Name)
-				break
-			}
-			fmt.Printf("%s Lost %d this round!\nNew balance: %d", player.Name, winAmt, player.Balance)
-
-		case winAmt == 0:
-			fmt.Printf("%s Broke Even. Solid.\nBalance: %d", player.Name, player.Balance)
-		}
-	}
 }
 
 // Update Player balances with win/loss/wash for each of their hands based on the dealer's final score
@@ -158,72 +198,27 @@ func (t *Table) scoreTable() {
 	}
 }
 
-// Recursive func for player to hit, stick, or split on dealt hand
-func (t Table) playerTurn(player *players.Player) error {
-	for handIndex, hand := range player.Hands {
-		if hand.IsCompleted() {
-			continue
-		}
-		if player.CheckSplit(hand) {
-			splitHands := cards.SplitHand(hand)
-			for _, splitHand := range splitHands {
-				// Draw one card for each
-				splitHand.Cards = append(splitHand.Cards, t.Deck.DrawCard(true))
-			}
-			// Replace this hand in player
-			player.Hands = slices.Replace(player.Hands, handIndex, handIndex, splitHands...)
+// Report whether each player won or lost this round
+// & remove players with 0 balance
+func (t Table) reportResults(balanceSnapshot map[string]int) {
+	for _, player := range t.Players {
+		playerRefBalance := balanceSnapshot[player.Name]
 
-			// play remaining hands & end turn
-			return t.playerTurn(player)
-		}
+		switch winAmt := player.Balance - playerRefBalance; {
+		case winAmt > 0:
+			fmt.Printf("%s Won %d this round!\nNew balance: %d", player.Name, winAmt, player.Balance)
 
-		t.hitOrStick(player, &hand)
-
-		// update player hand
-		player.Hands[handIndex] = hand
-	}
-	return nil
-}
-
-// Prompt user for hit and draw accordingly until a "no" response or bust
-func (t Table) hitOrStick(player *players.Player, hand *cards.Hand) {
-	var (
-		done, hit bool
-	)
-
-	for !done {
-		if hand.IsBlackjack() {
-			fmt.Println("Winner Winner!!")
-			break
-		}
-
-		handValue := hand.GetTotalValue()
-		hitMsg := fmt.Sprintf(
-			"Your hand is: [Y/n]\n"+
-				"%v - Value: %d\n"+
-				"Would you like to hit?", hand.Show(), handValue)
-
-		hit = utils.PromptYesOrNo(hitMsg)
-
-		if hit {
-			hand.AddCard(t.Deck.DrawCard(true))
-			switch handValue = hand.GetTotalValue(); {
-			case handValue > 21:
-				fmt.Println(fmt.Sprintf("Oof, %d means bust!", handValue))
-				done = true
-				break
-			case handValue == 21:
-				fmt.Println("Nice! You got 21")
-				done = true
+		case winAmt < 0:
+			if player.Balance == 0 {
+				fmt.Printf("%s Lost everything this round!\n", player.Name)
 				break
 			}
-			continue
-		}
-		fmt.Sprintln(fmt.Sprintf("%s has chosen to stick at %d", player.Name, handValue))
-		done = true
-	}
+			fmt.Printf("%s Lost %d this round!\nNew balance: %d", player.Name, winAmt, player.Balance)
 
-	hand.MarkCompleted()
+		case winAmt == 0:
+			fmt.Printf("%s Broke Even. Solid.\nBalance: %d", player.Name, player.Balance)
+		}
+	}
 }
 
 // ee
